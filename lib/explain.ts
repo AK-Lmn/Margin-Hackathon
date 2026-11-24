@@ -11,8 +11,11 @@ export class UngroundedError extends Error {}
 
 /** On-device failed and the seller has not agreed to send their data to the cloud. */
 export class CloudConsentError extends Error {
-  constructor() {
+  /** Why on-device failed, in the model or browser's own words. */
+  readonly reason: string;
+  constructor(reason = "") {
     super("On-device AI isn't available right now.");
+    this.reason = reason;
   }
 }
 
@@ -85,6 +88,6 @@ export async function explainWith(facts: Facts, d: Deps): Promise<AiResult<Short
       ? deviceError
       : new Error("On-device AI isn't available here and you're offline.");
   }
-  if (!d.allowCloud) throw new CloudConsentError();
+  if (!d.allowCloud) throw new CloudConsentError(deviceError instanceof Error ? deviceError.message : "");
   return withTimeout(attempt(d.cloud, facts), d.cloudTimeoutMs, "The cloud model");
 }

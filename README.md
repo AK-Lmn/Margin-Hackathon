@@ -21,7 +21,16 @@ Margin computes every number itself with plain, tested functions. The AI only ex
 - **The source label is real.** The badge next to each answer reads the SDK's `inferenceSource` and shows how long the call took.
 - **Answers are checked before you see them.** Each of the three answers may only use numbers from its own line of the fact sheet it was given. A number from another line, a made-up number, or a spelled-out number such as "twelve" makes Margin discard the answer and show an error with a retry.
 
-On-device inference needs desktop Chrome 139 or newer with `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input` enabled. Other browsers use the cloud option.
+## Try the on-device model
+
+On-device inference needs desktop Chrome 139 or newer. Other browsers use the cloud option, after asking you first.
+
+1. Open `chrome://flags/#prompt-api-for-gemini-nano-multimodal-input`, set it to Enabled, and relaunch Chrome.
+2. Open `chrome://components`, find "Optimization Guide On Device Model" and click "Check for update". Wait until it shows a version number.
+3. Open the app and click "Explain my numbers". The first run downloads the model and can take a minute.
+4. The badge on the answer reads "On-device · offline" when it worked. To prove it, turn Wi-Fi off and click "Run again".
+
+You can also check from the browser console: `await LanguageModel.availability()` should return `"available"` (or `"downloadable"` before the first download).
 
 ## Privacy
 

@@ -12,19 +12,22 @@ import { computeAnswer } from "@/lib/margin";
 import { discountedPrice } from "@/lib/moves";
 import { sampleShop } from "@/lib/sample-shop";
 import {
-  clearOp, deleteOp, discountOp, overheadOp, parseStore, setPriceOp,
+  clearOp, deleteOp, discountOp, loadOrSample, overheadOp, setPriceOp,
   type Op, type Store,
 } from "@/lib/store";
 import type { Overhead, Product } from "@/lib/types";
 
 const KEY = "margin:v1";
 
-function load(): Store | null {
+/** Saved shop, or the sample shop on a first visit. A shop cleared with Start over stays empty. */
+function load(now: Date): Store {
+  let raw: string | null = null;
   try {
-    return parseStore(localStorage.getItem(KEY));
+    raw = localStorage.getItem(KEY);
   } catch {
-    return null;
+    /* storage blocked: treat as a first visit */
   }
+  return loadOrSample(raw, now);
 }
 
 function Skeleton() {
@@ -53,9 +56,9 @@ export function MarginApp() {
   const toastId = useRef(0);
 
   useEffect(() => {
-    const s = load();
-    if (s) setStore(s);
-    setNow(new Date());
+    const t = new Date();
+    setStore(load(t));
+    setNow(t);
     setReady(true);
   }, []);
 

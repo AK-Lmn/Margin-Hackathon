@@ -65,3 +65,36 @@ describe("parseStore", () => {
     expect(parseStore('{"products":"no"}')).toBeNull();
   });
 });
+
+describe("first visit", () => {
+  const NOW = new Date("2026-11-25T10:00:00");
+  it("loads the sample shop when nothing is saved", async () => {
+    const { loadOrSample } = await import("./store");
+    const s = loadOrSample(null, NOW);
+    expect(s.products.length).toBeGreaterThanOrEqual(8);
+    expect(s.overhead).not.toBeNull();
+  });
+  it("loads the sample shop when the saved data is unreadable", async () => {
+    const { loadOrSample } = await import("./store");
+    expect(loadOrSample("not json", NOW).products.length).toBeGreaterThan(0);
+  });
+  it("keeps a shop the seller cleared with Start over (saved but empty)", async () => {
+    const { loadOrSample } = await import("./store");
+    const s = loadOrSample(JSON.stringify({ products: [], overhead: null }), NOW);
+    expect(s.products).toEqual([]);
+    expect(s.overhead).toBeNull();
+  });
+  it("keeps the seller's own saved products", async () => {
+    const { loadOrSample } = await import("./store");
+    const saved = JSON.stringify({ products: [p({ id: "mine", name: "Mine" })], overhead: null });
+    expect(loadOrSample(saved, NOW).products.map((x) => x.id)).toEqual(["mine"]);
+  });
+});
+
+describe("blankProduct", () => {
+  it("is empty with quantity 0 and last sale set to today (local date)", async () => {
+    const { blankProduct } = await import("./store");
+    const b = blankProduct(new Date(2026, 10, 25, 23, 59));
+    expect(b).toMatchObject({ id: "", name: "", cost: null, price: 0, stock: 0, sold: 0, lastSoldDate: "2026-11-25" });
+  });
+});

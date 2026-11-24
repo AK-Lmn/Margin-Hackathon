@@ -104,3 +104,26 @@ describe("a stalled cloud call does not spin forever", () => {
     ).rejects.toThrow(/cloud model took too long/i);
   });
 });
+
+describe("the consent prompt carries the real reason on-device failed", () => {
+  it("passes the device error message along", async () => {
+    const reasonErr = async () => {
+      throw new Error("Local LanguageModel API not available in this environment.");
+    };
+    try {
+      await explainWith(facts, deps({ device: reasonErr, allowCloud: false }));
+      throw new Error("should have asked for consent");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CloudConsentError);
+      expect((e as CloudConsentError).reason).toContain("LanguageModel API not available");
+    }
+  });
+  it("has a reason even for a stuck model", async () => {
+    try {
+      await explainWith(facts, deps({ device: hangs, deviceTimeoutMs: 20, allowCloud: false }));
+      throw new Error("should have asked for consent");
+    } catch (e) {
+      expect((e as CloudConsentError).reason).toMatch(/took too long/);
+    }
+  });
+});

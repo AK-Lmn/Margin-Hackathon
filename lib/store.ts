@@ -1,6 +1,18 @@
+import { sampleShop } from "./sample-shop";
 import type { Overhead, Product } from "./types";
 
 export type Store = { products: Product[]; overhead: Overhead | null };
+
+/** Local calendar date as YYYY-MM-DD (not UTC, so late evening does not become tomorrow). */
+export function localIsoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** What the Add product form starts from, every time: empty, quantity 0, last sale today. */
+export function blankProduct(now: Date): Product {
+  return { id: "", name: "", cost: null, price: 0, stock: 0, sold: 0, lastSoldDate: localIsoDate(now) };
+}
 
 /** A change plus its undo. Undo reverses only this change, so edits made afterwards survive. */
 export type Op = { next: Store; undo: (current: Store) => Store };
@@ -93,4 +105,12 @@ export function parseStore(raw: string | null): Store | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * First visit (nothing saved, or saved data unreadable): show the sample shop so the first screen is
+ * the hero number, the chart and the three answers. A shop saved as empty (Start over) stays empty.
+ */
+export function loadOrSample(raw: string | null, now: Date): Store {
+  return parseStore(raw) ?? sampleShop(now);
 }

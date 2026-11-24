@@ -31,6 +31,7 @@ export function Field({ label, value, onChange, error, hint, inputMode = "decima
           value={value}
           onChange={(e) => onChange(e.target.value)}
           inputMode={inputMode}
+          autoComplete="off"
           type={type}
           placeholder={placeholder}
           aria-invalid={!!error}

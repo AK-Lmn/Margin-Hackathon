@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Check, Cloud, Copy, Cpu, Sparkles } from "lucide-react";
 import { CloudConsentError, explainShort, warmUpOnDevice, type AiResult } from "@/lib/ai";
 import { duration } from "@/lib/format";
 import { buildFacts, type ShortAnswers } from "@/lib/grounding";
@@ -10,10 +10,11 @@ type State =
   | { s: "idle" }
   | { s: "loading"; t0: number }
   | { s: "done"; r: AiResult<ShortAnswers>; ms: number }
-  | { s: "consent" }
+  | { s: "consent"; reason: string }
   | { s: "error"; message: string };
 
 const CONSENT_KEY = "margin:cloud-ok";
+const FLAG_URL = "chrome://flags/#prompt-api-for-gemini-nano-multimodal-input";
 
 /** Live stopwatch. Hidden from screen readers so it doesn't announce every tick. */
 function Elapsed({ since }: { since: number }) {
@@ -26,6 +27,63 @@ function Elapsed({ since }: { since: number }) {
     <span aria-hidden className="tabular-nums">
       {duration(ms)}
     </span>
+  );
+}
+
+/** Which model really answered, read from the SDK. Shown on every AI answer. */
+function SourceBadge({ source, ms }: { source: "ON_DEVICE" | "IN_CLOUD"; ms: number }) {
+  const onDevice = source === "ON_DEVICE";
+  const Icon = onDevice ? Cpu : Cloud;
+  return (
+    <p
+      className="flex items-center gap-1.5 rounded-full border border-field px-3 py-1 text-sm font-medium"
+      aria-label={`${onDevice ? "Answered on this device, no data sent" : "Answered by Google's cloud model"}, ${duration(ms)}`}
+    >
+      <Icon size={16} strokeWidth={1.75} aria-hidden />
+      <span>{onDevice ? "On-device · offline" : "Cloud · Google Gemini"}</span>
+      <span className="text-muted tabular-nums">{duration(ms)}</span>
+    </p>
+  );
+}
+
+/** Exact steps to get Chrome's built-in model running. */
+function OnDeviceHelp() {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(FLAG_URL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard blocked: the address is on screen to copy by hand */
+    }
+  };
+  return (
+    <div className="mt-3 text-sm leading-relaxed text-ink">
+      <p className="font-semibold">To run it on your device (desktop Chrome 139 or newer):</p>
+      <ol className="mt-1.5 list-decimal space-y-1.5 pl-5">
+        <li>
+          Open this address and set the flag to <strong>Enabled</strong>:
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <code className="break-all rounded bg-bg px-1.5 py-0.5 text-xs">{FLAG_URL}</code>
+            <button
+              onClick={copy}
+              className="press flex min-h-11 items-center gap-1.5 rounded-full border border-line px-3 text-xs font-semibold hover:bg-bg"
+            >
+              {copied ? <Check size={14} strokeWidth={2} aria-hidden /> : <Copy size={14} strokeWidth={1.75} aria-hidden />}
+              {copied ? "Copied" : "Copy address"}
+            </button>
+          </span>
+        </li>
+        <li>Relaunch Chrome.</li>
+        <li>
+          Open <code className="rounded bg-bg px-1.5 py-0.5 text-xs">chrome://components</code>, find{" "}
+          <em>Optimization Guide On Device Model</em> and click <em>Check for update</em>. Wait until it shows a version
+          number.
+        </li>
+        <li>Come back here and click Explain my numbers again. The first run downloads the model, so it can take a minute.</li>
+      </ol>
+    </div>
   );
 }
 
@@ -70,7 +128,7 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
       if (id === run_id.current) setState({ s: "done", r, ms: performance.now() - t0 });
     } catch (e) {
       if (id !== run_id.current) return;
-      if (e instanceof CloudConsentError) setState({ s: "consent" });
+      if (e instanceof CloudConsentError) setState({ s: "consent", reason: e.reason });
       else setState({ s: "error", message: e instanceof Error ? e.message : "Something went wrong." });
     }
   }
@@ -84,11 +142,6 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
     }
     void run(true);
   }
-
-  const badge =
-    state.s === "done"
-      ? `${state.r.source === "ON_DEVICE" ? "On-device · offline" : "Cloud"} · ${duration(state.ms)}`
-      : null;
 
   return (
     <section aria-label="Plain-words explanation" className="mt-6">
@@ -117,9 +170,13 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
 
       {state.s === "consent" && (
         <div role="alert" className="rise rounded-xl border border-line bg-wash p-4">
-          <p className="text-sm text-ink">
-            On-device AI isn&apos;t available in this browser. A cloud model can explain your numbers instead, but it
-            would receive your product names, costs and prices.
+          <p className="text-sm font-semibold text-ink">On-device AI isn&apos;t available in this browser.</p>
+          {state.reason && !/not available in this browser/i.test(state.reason) && (
+            <p className="mt-1 break-words text-xs text-muted">Browser said: {state.reason}</p>
+          )}
+          <OnDeviceHelp />
+          <p className="mt-4 text-sm text-ink">
+            Or use the cloud model instead. It would receive your product names, costs and prices.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={agreeToCloud} className="press min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg hover:bg-ink/85">
@@ -135,6 +192,7 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
       {state.s === "error" && (
         <div role="alert" className="rise rounded-xl border border-loss/40 bg-loss-wash p-4">
           <p className="text-sm text-ink">{state.message}</p>
+          {/offline/i.test(state.message) && <OnDeviceHelp />}
           <button onClick={() => run()} className="press mt-3 min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg hover:bg-ink/85">
             Try again
           </button>
@@ -143,9 +201,9 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
 
       {state.s === "done" && (
         <div className="rise">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <p className="text-sm font-semibold">In plain words</p>
-            <p className="text-xs text-muted">{badge}</p>
+            <SourceBadge source={state.r.source} ms={state.ms} />
           </div>
           <ul className="mt-2 space-y-2 text-sm leading-relaxed sm:text-base">
             {[state.r.value.profit, state.r.value.price, state.r.value.dead].map((t, i) => (

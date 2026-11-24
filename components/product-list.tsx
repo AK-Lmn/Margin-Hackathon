@@ -5,6 +5,7 @@ import { Collapse } from "./collapse";
 import { Field } from "./field";
 import { daysSince, money, pct } from "@/lib/format";
 import { marginPct } from "@/lib/margin";
+import { blankProduct } from "@/lib/store";
 import type { Product } from "@/lib/types";
 
 type Props = {
@@ -16,8 +17,6 @@ type Props = {
   onSave: (p: Product, isNew: boolean) => void;
   onDelete: (id: string) => void;
 };
-
-const blank = (): Product => ({ id: "", name: "", cost: null, price: 0, stock: 0, sold: 0, lastSoldDate: "" });
 
 function Editor({ initial, isNew, onSave, onDelete, onCancel }: {
   initial: Product; isNew: boolean;
@@ -87,12 +86,17 @@ function Editor({ initial, isNew, onSave, onDelete, onCancel }: {
 
 export function ProductList({ products, deadIds, now, openId, setOpenId, onSave, onDelete }: Props) {
   const dead = new Set(deadIds);
+  // A new key each time the Add form opens, so it can never keep values from an earlier use.
+  const [addCount, setAddCount] = useState(0);
   return (
     <section aria-labelledby="prod-h">
       <div className="flex items-center justify-between">
         <h2 id="prod-h" className="text-lg font-semibold">Products</h2>
         <button
-          onClick={() => setOpenId(openId === "new" ? null : "new")}
+          onClick={() => {
+            if (openId !== "new") setAddCount((n) => n + 1);
+            setOpenId(openId === "new" ? null : "new");
+          }}
           aria-expanded={openId === "new"}
           className="press flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-sm font-semibold hover:bg-wash aria-expanded:border-ink aria-expanded:bg-wash"
         >
@@ -103,7 +107,7 @@ export function ProductList({ products, deadIds, now, openId, setOpenId, onSave,
       <Collapse open={openId === "new"}>
         {openId === "new" && (
           <div className="mt-2 overflow-hidden rounded-xl border border-line">
-            <Editor initial={blank()} isNew onSave={(p) => onSave(p, true)} onDelete={() => {}} onCancel={() => setOpenId(null)} />
+            <Editor key={addCount} initial={blankProduct(now)} isNew onSave={(p) => onSave(p, true)} onDelete={() => {}} onCancel={() => setOpenId(null)} />
           </div>
         )}
       </Collapse>
