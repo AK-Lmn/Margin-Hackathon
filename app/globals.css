@@ -20,9 +20,9 @@
   --motion-fast: 150ms;
   --motion-normal: 200ms;
   --motion-exit: 160ms; /* ~20% shorter than the entrance */
-  --motion-settle: 260ms;
+  --motion-settle: 250ms;
   --motion-settle-delay: 180ms;
-  --motion-slow: 700ms;
+  --motion-reveal: 250ms; /* chart draw, confirm pulse: the longest motion in the app */
   --motion-instant: 0.01ms; /* reduced motion: state still changes, movement does not */
   --stagger: 30ms;
   --shimmer: 1.2s;
@@ -137,7 +137,7 @@ input {
   }
 }
 .draw {
-  animation: reveal var(--motion-slow) var(--ease-in-out) both;
+  animation: reveal var(--motion-reveal) var(--ease-out) both;
 }
 
 /* One pulse to confirm a successful action */
@@ -150,7 +150,7 @@ input {
   }
 }
 .confirm {
-  animation: confirm var(--motion-slow) var(--ease-out);
+  animation: confirm var(--motion-reveal) var(--ease-out);
 }
 
 /* ---------- Collapsible (grid rows trick: no layout thrash on content) ---------- */
@@ -168,7 +168,9 @@ input {
   transition-duration: var(--motion-normal);
 }
 .expander > div {
-  overflow: hidden;
+  /* clip while opening, but leave room for focus outlines at the edges */
+  overflow: clip;
+  overflow-clip-margin: var(--shift-small);
   min-height: 0;
 }
 

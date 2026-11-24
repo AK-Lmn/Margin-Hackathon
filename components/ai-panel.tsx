@@ -30,6 +30,23 @@ function Elapsed({ since }: { since: number }) {
   );
 }
 
+/** Slides its content open (height and fade, same timing as the forms) when it appears. */
+function Reveal({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // Read the closed layout once so the browser registers it, then open: the transition runs without
+    // waiting for an animation frame (frames pause in background tabs and the answer must still appear).
+    box.current?.getBoundingClientRect();
+    setOpen(true);
+  }, []);
+  return (
+    <div ref={box} className="expander" data-open={open}>
+      <div>{children}</div>
+    </div>
+  );
+}
+
 /** Which model really answered, read from the SDK. Shown on every AI answer. */
 function SourceBadge({ source, ms }: { source: "ON_DEVICE" | "IN_CLOUD"; ms: number }) {
   const onDevice = source === "ON_DEVICE";
@@ -155,6 +172,7 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
       )}
 
       {state.s === "loading" && (
+        <Reveal>
         <div aria-busy="true" aria-live="polite">
           <p className="flex items-baseline justify-between gap-3 text-sm text-muted">
             <span>Crunching your numbers&hellip;</span>
@@ -166,10 +184,12 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
             <div className="skeleton h-4 w-10/12" />
           </div>
         </div>
+        </Reveal>
       )}
 
       {state.s === "consent" && (
-        <div role="alert" className="rise rounded-xl border border-line bg-wash p-4">
+        <Reveal>
+        <div role="alert" className="rounded-xl border border-line bg-wash p-4">
           <p className="text-sm font-semibold text-ink">On-device AI isn&apos;t available in this browser.</p>
           {state.reason && !/not available in this browser/i.test(state.reason) && (
             <p className="mt-1 break-words text-xs text-muted">Browser said: {state.reason}</p>
@@ -187,20 +207,24 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
             </button>
           </div>
         </div>
+        </Reveal>
       )}
 
       {state.s === "error" && (
-        <div role="alert" className="rise rounded-xl border border-loss/40 bg-loss-wash p-4">
+        <Reveal>
+        <div role="alert" className="rounded-xl border border-loss/40 bg-loss-wash p-4">
           <p className="text-sm text-ink">{state.message}</p>
           {/offline/i.test(state.message) && <OnDeviceHelp />}
           <button onClick={() => run()} className="press mt-3 min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg hover:bg-ink/85">
             Try again
           </button>
         </div>
+        </Reveal>
       )}
 
       {state.s === "done" && (
-        <div className="rise">
+        <Reveal>
+        <div>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <p className="text-sm font-semibold">In plain words</p>
             <SourceBadge source={state.r.source} ms={state.ms} />
@@ -216,6 +240,7 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
             Run again
           </button>
         </div>
+        </Reveal>
       )}
     </section>
   );

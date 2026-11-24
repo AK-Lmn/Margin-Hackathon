@@ -1,6 +1,7 @@
 "use client";
 import { PackageX, Receipt, Tag } from "lucide-react";
 import { money } from "@/lib/format";
+import { useTick } from "@/lib/use-count-up";
 import { deadStockValue, discountable, pickPriceMove } from "@/lib/moves";
 import type { Answer, Overhead, Product } from "@/lib/types";
 
@@ -25,6 +26,7 @@ function Row({
   action?: { label: string; onClick: () => void; primary?: boolean };
   flashing?: boolean;
 }) {
+  const tick = useTick<HTMLHeadingElement>(title);
   return (
     <li
       key={flashing ? "f" : "n"}
@@ -34,7 +36,7 @@ function Row({
       <div className="flex min-w-0 flex-1 gap-3.5">
         <span className="mt-0.5 shrink-0 text-muted">{icon}</span>
         <div className="min-w-0">
-          <h3 className="text-pretty text-base font-semibold leading-snug sm:text-lg">{title}</h3>
+          <h3 ref={tick} className="text-pretty text-base font-semibold leading-snug sm:text-lg">{title}</h3>
           {detail && <p className="mt-1 text-pretty text-sm leading-relaxed text-muted">{detail}</p>}
         </div>
       </div>

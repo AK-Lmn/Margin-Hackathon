@@ -1,12 +1,14 @@
 "use client";
 import { money } from "@/lib/format";
-import { useCountUp } from "@/lib/use-count-up";
+import { useCountUp, useTick } from "@/lib/use-count-up";
 import type { Answer } from "@/lib/types";
 
 type Props = { answer: Answer; onEditOverhead: () => void };
 
 export function Hero({ answer, onEditOverhead }: Props) {
-  const shown = useCountUp(Math.round(answer.trueProfit * 100) / 100);
+  const profit = Math.round(answer.trueProfit * 100) / 100;
+  const shown = useCountUp(profit);
+  const tick = useTick<HTMLParagraphElement>(profit);
   const noSales = answer.revenue === 0;
   const losing = answer.trueProfit < 0;
 
@@ -24,6 +26,7 @@ export function Hero({ answer, onEditOverhead }: Props) {
         {headline}
       </h1>
       <p
+        ref={tick}
         className={`mt-1 font-semibold leading-none tracking-tight rise ${tone}`}
         style={{ fontSize: "clamp(3rem, 6vw + 1.5rem, 6rem)", "--i": 1 } as React.CSSProperties}
         aria-live="polite"
