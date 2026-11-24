@@ -2,7 +2,7 @@
 
 Margin is a web app for small sellers who have no accounting system. You enter your products, what they cost and your monthly overhead (rent, bills, supplies, staff pay). It shows your true profit, one price worth changing, and the stock that hasn't sold in 30 days.
 
-It was built for the #BuildHybridAI 2026 hackathon on Devpost.
+It was built for the #BuildHybridAI 2026 hackathon on Devpost. A live copy runs at https://margin-projactsss.vercel.app.
 
 ## What it answers
 

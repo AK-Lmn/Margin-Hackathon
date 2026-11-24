@@ -37,6 +37,14 @@ const cases: Record<string, ReturnType<typeof buildFacts>> = {
   "no cost": buildFacts([p({ name: "Pin", cost: null, sold: 3, lastSoldDate: "2026-11-20" })], null, NOW),
 };
 
+// The web API key only accepts calls from known sites. Browsers send a referrer; Node does not, so add one.
+const realFetch = globalThis.fetch;
+globalThis.fetch = (input, init) => {
+  const headers = new Headers(init?.headers);
+  headers.set("Referer", "http://localhost:3001/");
+  return realFetch(input, { ...init, headers });
+};
+
 describe.skipIf(!process.env.LIVE || !env.NEXT_PUBLIC_FIREBASE_API_KEY)("live grounding", () => {
   const app = initializeApp({
     apiKey: env.NEXT_PUBLIC_FIREBASE_API_KEY,
