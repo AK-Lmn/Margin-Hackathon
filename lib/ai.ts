@@ -7,6 +7,7 @@ import type { Facts } from "./grounding";
 export { CloudConsentError, UngroundedError, type AiResult } from "./explain";
 
 const DEVICE_TIMEOUT_MS = 30_000;
+const CLOUD_TIMEOUT_MS = 30_000;
 
 const toSource = (s: unknown): Source => (s === InferenceSource.ON_DEVICE ? "ON_DEVICE" : "IN_CLOUD");
 
@@ -53,5 +54,6 @@ export function explainShort(facts: Facts, allowCloud: boolean) {
     online: () => typeof navigator === "undefined" || navigator.onLine,
     allowCloud,
     deviceTimeoutMs: DEVICE_TIMEOUT_MS,
+    cloudTimeoutMs: CLOUD_TIMEOUT_MS,
   });
 }

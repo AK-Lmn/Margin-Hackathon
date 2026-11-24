@@ -39,6 +39,8 @@ export type Deps = {
   allowCloud: boolean;
   /** How long on-device may take before we give up on it. */
   deviceTimeoutMs: number;
+  /** How long the cloud model may take. A stalled request would otherwise spin forever. */
+  cloudTimeoutMs: number;
 };
 
 function withTimeout<T>(p: Promise<T>, ms: number, what: string): Promise<T> {
@@ -84,5 +86,5 @@ export async function explainWith(facts: Facts, d: Deps): Promise<AiResult<Short
       : new Error("On-device AI isn't available here and you're offline.");
   }
   if (!d.allowCloud) throw new CloudConsentError();
-  return attempt(d.cloud, facts);
+  return withTimeout(attempt(d.cloud, facts), d.cloudTimeoutMs, "The cloud model");
 }

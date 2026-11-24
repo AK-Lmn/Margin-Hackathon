@@ -22,6 +22,7 @@ const deps = (o: Partial<Deps>): Deps => ({
   online: () => true,
   allowCloud: true,
   deviceTimeoutMs: 50,
+  cloudTimeoutMs: 50,
   ...o,
 });
 
@@ -93,5 +94,13 @@ describe("guardDevice: the on-device path must never reach the cloud", () => {
       explainWith(facts, deps({ device: guardDevice(sdkLeak, () => false), cloud, allowCloud: false })),
     ).rejects.toBeInstanceOf(CloudConsentError);
     expect(cloudCalled).toBe(false);
+  });
+});
+
+describe("a stalled cloud call does not spin forever", () => {
+  it("gives up after the cloud timeout and says so", async () => {
+    await expect(
+      explainWith(facts, deps({ device: fails, cloud: hangs, cloudTimeoutMs: 20 })),
+    ).rejects.toThrow(/cloud model took too long/i);
   });
 });
