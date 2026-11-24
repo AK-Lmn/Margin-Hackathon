@@ -121,7 +121,7 @@ input {
 }
 
 /* ---------- Collapsible (grid rows trick: no layout thrash on content) ---------- */
-.collapse {
+.expander {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
@@ -129,12 +129,12 @@ input {
     grid-template-rows var(--motion-exit) var(--ease-out),
     opacity var(--motion-exit) var(--ease-out);
 }
-.collapse[data-open="true"] {
+.expander[data-open="true"] {
   grid-template-rows: 1fr;
   opacity: 1;
   transition-duration: var(--motion-normal);
 }
-.collapse > div {
+.expander > div {
   overflow: hidden;
   min-height: 0;
 }
@@ -186,7 +186,7 @@ input {
     animation-duration: 0.01ms !important;
     animation-delay: 0ms !important;
   }
-  .collapse,
+  .expander,
   .press {
     transition-duration: 0.01ms !important;
   }
