@@ -6,11 +6,8 @@ import {
   getGenerativeModel,
   GoogleAIBackend,
   InferenceMode,
-  ThinkingLevel,
   type GenerativeModel,
 } from "firebase/ai";
-
-const CLOUD_MODEL = "gemini-3.5-flash-lite";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -58,9 +55,5 @@ export function onDeviceModel(): GenerativeModel {
 }
 
 export function cloudModel(): GenerativeModel {
-  return (cloud ??= getGenerativeModel(getAi(), {
-    mode: InferenceMode.ONLY_IN_CLOUD,
-    // LOW thinking: these are short rewrites of numbers we already computed, so speed matters more.
-    inCloudParams: { model: CLOUD_MODEL, generationConfig: { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } },
-  }));
+  return (cloud ??= getGenerativeModel(getAi(), { mode: InferenceMode.ONLY_IN_CLOUD }));
 }
