@@ -76,3 +76,14 @@ export function computeAnswer(
     source: "LOCAL_MATH",
   };
 }
+
+/** Average profit per unit before overhead, weighted by units sold (simple average if none sold). null if no costed products. */
+export function avgUnitMargin(products: Product[]): number | null {
+  const costed = products.filter((p) => p.cost !== null);
+  if (costed.length === 0) return null;
+  const units = costed.reduce((s, p) => s + p.sold, 0);
+  if (units > 0) {
+    return costed.reduce((s, p) => s + (p.price - (p.cost as number)) * p.sold, 0) / units;
+  }
+  return costed.reduce((s, p) => s + (p.price - (p.cost as number)), 0) / costed.length;
+}

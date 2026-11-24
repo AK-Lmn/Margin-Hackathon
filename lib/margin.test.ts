@@ -108,3 +108,12 @@ describe("priceSuggestion", () => {
     expect(priceSuggestion(p({ cost: 7 }), oh, 0, 0.3)).toBe(10);
   });
 });
+
+describe("avgUnitMargin", () => {
+  it("is sold-weighted, simple average when nothing sold, null with no costs", async () => {
+    const { avgUnitMargin } = await import("./margin");
+    expect(avgUnitMargin([p({ cost: 5, price: 10, sold: 20 }), p({ cost: 2, price: 6, sold: 10 })])).toBeCloseTo(4.6667);
+    expect(avgUnitMargin([p({ cost: 5, price: 10 })])).toBe(5);
+    expect(avgUnitMargin([p({ cost: null })])).toBeNull();
+  });
+});

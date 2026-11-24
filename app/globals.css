@@ -1,26 +1,196 @@
 @import "tailwindcss";
 
+/* Daylight palette: the seller is outdoors at a stall. Colour means status only. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --ink: #0d1210;
+  --muted: #566059; /* 6.4:1 on white */
+  --line: #e4e7e3;
+  --wash: #f4f6f3;
+  --gain: #00794a; /* 5.4:1 on white */
+  --gain-wash: #e4f5ec;
+  --loss: #c4281f; /* 5.7:1 on white */
+  --loss-wash: #fdebe9;
+
+  --motion-fast: 150ms;
+  --motion-normal: 200ms;
+  --motion-exit: 160ms; /* ~20% shorter than the entrance */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-wash: var(--wash);
+  --color-gain: var(--gain);
+  --color-gain-wash: var(--gain-wash);
+  --color-loss: var(--loss);
+  --color-loss-wash: var(--loss-wash);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+input {
+  caret-color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------- Press + hover feedback ---------- */
+.press {
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* ---------- Entrances ---------- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise var(--motion-normal) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+/* Secondary details settle after the main element */
+.settle {
+  animation: rise 260ms var(--ease-out) both;
+  animation-delay: 180ms;
+}
+
+/* Chart line draws once */
+@keyframes reveal {
+  from {
+    clip-path: inset(-4px 100% -4px 0);
+  }
+  to {
+    clip-path: inset(-4px -4px -4px 0);
+  }
+}
+.draw {
+  animation: reveal 700ms var(--ease-in-out) both;
+}
+
+/* One pulse to confirm a successful action */
+@keyframes confirm {
+  0% {
+    background-color: var(--gain-wash);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.confirm {
+  animation: confirm 700ms var(--ease-out);
+}
+
+/* ---------- Collapsible (grid rows trick: no layout thrash on content) ---------- */
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--motion-exit) var(--ease-out),
+    opacity var(--motion-exit) var(--ease-out);
+}
+.collapse[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition-duration: var(--motion-normal);
+}
+.collapse > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ---------- Toast ---------- */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+.toast {
+  transform-origin: bottom center;
+  animation: toast-in var(--motion-normal) var(--ease-out) both;
+}
+.toast[data-state="closing"] {
+  animation: toast-out var(--motion-exit) var(--ease-out) both;
+}
+
+/* ---------- Skeleton ---------- */
+@keyframes shimmer {
+  50% {
+    opacity: 0.5;
+  }
+}
+.skeleton {
+  background: var(--wash);
+  border-radius: 8px;
+  animation: shimmer 1.2s var(--ease-in-out) infinite;
+}
+
+/* ---------- Reduced motion: drop movement, keep state changes ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .settle,
+  .draw,
+  .confirm,
+  .toast {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+  .collapse,
+  .press {
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton {
+    animation: none;
+  }
 }

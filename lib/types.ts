@@ -9,6 +9,8 @@ export type Product = {
   sold: number;
   /** ISO date of last sale. Empty string = never sold. */
   lastSoldDate: string;
+  /** Original price when the seller discounted this product. */
+  discountedFrom?: number;
 };
 
 export type Overhead = {
