@@ -91,3 +91,15 @@ export async function explainWith(facts: Facts, d: Deps): Promise<AiResult<Short
   if (!d.allowCloud) throw new CloudConsentError(deviceError instanceof Error ? deviceError.message : "");
   return withTimeout(attempt(d.cloud, facts), d.cloudTimeoutMs, "The cloud model");
 }
+
+/**
+ * The seller picked the cloud model themselves ("Run in cloud"), so skip on-device entirely.
+ * Same grounding check and time limit as every other answer.
+ */
+export async function explainCloudOnly(
+  facts: Facts,
+  d: Pick<Deps, "cloud" | "online" | "cloudTimeoutMs">,
+): Promise<AiResult<ShortAnswers>> {
+  if (!d.online()) throw new Error("You're offline, so the cloud model can't be reached.");
+  return withTimeout(attempt(d.cloud, facts), d.cloudTimeoutMs, "The cloud model");
+}

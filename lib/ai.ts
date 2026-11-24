@@ -1,6 +1,6 @@
 "use client";
 import { InferenceSource } from "firebase/ai";
-import { explainWith, guardDevice, type Runner, type Source } from "./explain";
+import { explainCloudOnly, explainWith, guardDevice, type Runner, type Source } from "./explain";
 import { cloudModel, onDeviceModel } from "./firebase";
 import type { Facts } from "./grounding";
 
@@ -54,6 +54,15 @@ export function explainShort(facts: Facts, allowCloud: boolean) {
     online: () => typeof navigator === "undefined" || navigator.onLine,
     allowCloud,
     deviceTimeoutMs: DEVICE_TIMEOUT_MS,
+    cloudTimeoutMs: CLOUD_TIMEOUT_MS,
+  });
+}
+
+/** Cloud model only, because the seller chose it. Their consent is handled by the caller. */
+export function explainInCloud(facts: Facts) {
+  return explainCloudOnly(facts, {
+    cloud: cloudRunner,
+    online: () => typeof navigator === "undefined" || navigator.onLine,
     cloudTimeoutMs: CLOUD_TIMEOUT_MS,
   });
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Cloud, Copy, Cpu, Sparkles } from "lucide-react";
-import { CloudConsentError, explainShort, warmUpOnDevice, type AiResult } from "@/lib/ai";
+import { CloudConsentError, explainInCloud, explainShort, warmUpOnDevice, type AiResult } from "@/lib/ai";
 import { duration } from "@/lib/format";
 import { buildFacts, type ShortAnswers } from "@/lib/grounding";
 import type { Overhead, Product } from "@/lib/types";
@@ -10,7 +10,7 @@ type State =
   | { s: "idle" }
   | { s: "loading"; t0: number }
   | { s: "done"; r: AiResult<ShortAnswers>; ms: number }
-  | { s: "consent"; reason: string }
+  | { s: "consent"; reason: string; chosen?: { r: AiResult<ShortAnswers>; ms: number } }
   | { s: "error"; message: string };
 
 const CONSENT_KEY = "margin:cloud-ok";
@@ -150,14 +150,33 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
     }
   }
 
+  /** The seller picked the cloud model themselves. */
+  async function runCloud() {
+    const id = ++run_id.current;
+    const t0 = performance.now();
+    setState({ s: "loading", t0 });
+    try {
+      const r = await explainInCloud(facts);
+      if (id === run_id.current) setState({ s: "done", r, ms: performance.now() - t0 });
+    } catch (e) {
+      if (id === run_id.current) setState({ s: "error", message: e instanceof Error ? e.message : "Something went wrong." });
+    }
+  }
+
+  function chooseCloud(prev: { r: AiResult<ShortAnswers>; ms: number }) {
+    if (cloudOk) void runCloud();
+    else setState({ s: "consent", reason: "", chosen: prev });
+  }
+
   function agreeToCloud() {
+    const chose = state.s === "consent" && state.chosen;
     setCloudOk(true);
     try {
       localStorage.setItem(CONSENT_KEY, "1");
     } catch {
       /* fine: the choice lasts for this visit */
     }
-    void run(true);
+    void (chose ? runCloud() : run(true));
   }
 
   return (
@@ -187,7 +206,26 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
         </Reveal>
       )}
 
-      {state.s === "consent" && (
+      {state.s === "consent" && state.chosen && (
+        <Reveal>
+        <div role="alert" className="rounded-xl border border-line bg-wash p-4">
+          <p className="text-sm font-semibold text-ink">Run this in the cloud instead?</p>
+          <p className="mt-1 text-sm text-ink">
+            Google&apos;s Gemini model would receive your product names, costs and prices. On-device keeps them on this device.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button onClick={agreeToCloud} className="press min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg hover:bg-ink/85">
+              Use the cloud model
+            </button>
+            <button onClick={() => state.chosen && setState({ s: "done", r: state.chosen.r, ms: state.chosen.ms })} className="press min-h-11 rounded-full px-4 text-sm font-medium text-muted hover:text-ink">
+              Cancel
+            </button>
+          </div>
+        </div>
+        </Reveal>
+      )}
+
+      {state.s === "consent" && !state.chosen && (
         <Reveal>
         <div role="alert" className="rounded-xl border border-line bg-wash p-4">
           <p className="text-sm font-semibold text-ink">On-device AI isn&apos;t available in this browser.</p>
@@ -214,7 +252,7 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
         <Reveal>
         <div role="alert" className="rounded-xl border border-loss/40 bg-loss-wash p-4">
           <p className="text-sm text-ink">{state.message}</p>
-          {/offline/i.test(state.message) && <OnDeviceHelp />}
+          {/on-device ai isn.t available/i.test(state.message) && <OnDeviceHelp />}
           <button onClick={() => run()} className="press mt-3 min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg hover:bg-ink/85">
             Try again
           </button>
@@ -236,9 +274,19 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
               </li>
             ))}
           </ul>
-          <button onClick={() => run()} className="press mt-3 min-h-11 rounded-full px-3 text-sm font-medium text-muted hover:text-ink">
-            Run again
-          </button>
+          <div className="mt-3 flex flex-wrap items-center gap-x-2">
+            <button onClick={() => run()} className="press min-h-11 rounded-full px-3 text-sm font-medium text-muted hover:text-ink">
+              Run again
+            </button>
+            {state.r.source === "ON_DEVICE" && (
+              <button
+                onClick={() => chooseCloud({ r: state.r, ms: state.ms })}
+                className="press flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-sm font-semibold hover:bg-wash"
+              >
+                <Cloud size={16} strokeWidth={1.75} aria-hidden /> Run in cloud
+              </button>
+            )}
+          </div>
         </div>
         </Reveal>
       )}

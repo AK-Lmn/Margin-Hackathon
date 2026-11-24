@@ -127,3 +127,33 @@ describe("the consent prompt carries the real reason on-device failed", () => {
     }
   });
 });
+
+describe("explainCloudOnly: the seller chose the cloud model", () => {
+  const cloudDeps = (o: Partial<{ cloud: Runner; online: () => boolean; cloudTimeoutMs: number }> = {}) => ({
+    cloud: ok(good, "IN_CLOUD") as Runner,
+    online: () => true,
+    cloudTimeoutMs: 50,
+    ...o,
+  });
+  it("answers from the cloud and reports the cloud as the source", async () => {
+    const { explainCloudOnly } = await import("./explain");
+    const r = await explainCloudOnly(facts, cloudDeps());
+    expect(r.source).toBe("IN_CLOUD");
+    expect(r.value.profit.length).toBeGreaterThan(0);
+  });
+  it("says so when there is no connection, without trying", async () => {
+    const { explainCloudOnly } = await import("./explain");
+    let called = false;
+    const cloud: Runner = async () => ((called = true), { text: good, source: "IN_CLOUD" });
+    await expect(explainCloudOnly(facts, cloudDeps({ cloud, online: () => false }))).rejects.toThrow(/offline/i);
+    expect(called).toBe(false);
+  });
+  it("still refuses an answer with numbers that are not in the data", async () => {
+    const { explainCloudOnly } = await import("./explain");
+    await expect(explainCloudOnly(facts, cloudDeps({ cloud: ok(invented, "IN_CLOUD") }))).rejects.toBeInstanceOf(UngroundedError);
+  });
+  it("gives up on a stalled cloud call", async () => {
+    const { explainCloudOnly } = await import("./explain");
+    await expect(explainCloudOnly(facts, cloudDeps({ cloud: hangs, cloudTimeoutMs: 20 }))).rejects.toThrow(/took too long/);
+  });
+});
