@@ -39,6 +39,8 @@ npm run dev
 
 Set `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` to turn on App Check. Without it, anyone who copies the web key from the page can call the AI.
 
+With App Check enforced, local development needs a debug token. Register one under Firebase console > App Check > Manage debug tokens and put it in `.env.local` as `NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN`. The `LIVE=1` test reads the same token. Never commit it.
+
 ## Tests
 
 ```

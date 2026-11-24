@@ -37,11 +37,31 @@ const cases: Record<string, ReturnType<typeof buildFacts>> = {
   "no cost": buildFacts([p({ name: "Pin", cost: null, sold: 3, lastSoldDate: "2026-11-20" })], null, NOW),
 };
 
-// The web API key only accepts calls from known sites. Browsers send a referrer; Node does not, so add one.
+// The web API key only accepts calls from known sites, and App Check is enforced. Browsers send a
+// referrer and get tokens from reCAPTCHA; Node has neither, so add a referrer and trade the
+// registered debug token (NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN) for a one-time App Check token per call.
 const realFetch = globalThis.fetch;
-globalThis.fetch = (input, init) => {
+async function appCheckToken(): Promise<string | null> {
+  const debugToken = env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN;
+  if (!debugToken) return null;
+  const project = env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
+  const res = await realFetch(
+    `https://firebaseappcheck.googleapis.com/v1/projects/${project}/apps/${env.NEXT_PUBLIC_FIREBASE_APP_ID}:exchangeDebugToken?key=${env.NEXT_PUBLIC_FIREBASE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Referer: "http://localhost:3001/" },
+      body: JSON.stringify({ debugToken, limitedUse: true }),
+    },
+  );
+  return res.ok ? ((await res.json()) as { token: string }).token : null;
+}
+globalThis.fetch = async (input, init) => {
   const headers = new Headers(init?.headers);
   headers.set("Referer", "http://localhost:3001/");
+  if (String(input instanceof Request ? input.url : input).includes("firebasevertexai")) {
+    const token = await appCheckToken();
+    if (token) headers.set("X-Firebase-AppCheck", token);
+  }
   return realFetch(input, { ...init, headers });
 };
 
