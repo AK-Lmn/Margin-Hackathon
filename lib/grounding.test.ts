@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFacts, onDevicePrompt, parseShortAnswers, validateGrounded } from "./grounding";
+import { buildFacts, factSheet, onDevicePrompt, parseShortAnswers, validateGrounded } from "./grounding";
 import { sampleShop } from "./sample-shop";
 import type { Overhead, Product } from "./types";
 
@@ -73,22 +73,47 @@ describe("validateGrounded: golden test, every number must trace to the input", 
 });
 
 describe("parseShortAnswers", () => {
-  it("parses clean JSON and fenced JSON", () => {
+  it("parses three plain lines, stripping numbering and bullets", () => {
+    expect(parseShortAnswers("a\nb\nc")).toEqual({ profit: "a", price: "b", dead: "c" });
+    expect(parseShortAnswers("1. a\n2) b\n- c\n")).toEqual({ profit: "a", price: "b", dead: "c" });
+  });
+  it("ignores a greeting when the points are numbered", () => {
+    expect(parseShortAnswers("Hey! Here is your update:\n1. a\n2. b\n3. c")).toEqual({ profit: "a", price: "b", dead: "c" });
+  });
+  it("still tolerates clean and fenced JSON", () => {
     const j = '{"profit":"a","price":"b","dead":"c"}';
     expect(parseShortAnswers(j)).toEqual({ profit: "a", price: "b", dead: "c" });
     expect(parseShortAnswers("```json\n" + j + "\n```")).toEqual({ profit: "a", price: "b", dead: "c" });
   });
-  it("returns null for junk or missing fields", () => {
+  it("returns null for junk or wrong line counts", () => {
     expect(parseShortAnswers("nope")).toBeNull();
+    expect(parseShortAnswers("a\nb")).toBeNull();
     expect(parseShortAnswers('{"profit":"a"}')).toBeNull();
   });
 });
 
 describe("prompts", () => {
-  it("embed the facts and forbid invention", () => {
-    const facts = buildFacts([p({})], oh, NOW);
-    const text = onDevicePrompt(facts);
-    expect(text).toContain('"trueProfit"');
-    expect(text.toLowerCase()).toContain("only use numbers");
+  const shop = sampleShop(NOW);
+  const facts = buildFacts(shop.products, shop.overhead, NOW);
+
+  it("fact sheet is small, plain English, and grounded in the facts", () => {
+    const sheet = factSheet(facts);
+    expect(sheet).not.toContain("{");
+    expect(sheet).not.toContain("trueProfit");
+    expect(sheet.length).toBeLessThan(700);
+    // numbered list markers aside, every number must trace to the facts
+    expect(validateGrounded(sheet.replace(/^\d\.\s/gm, ""), facts)).toEqual({ ok: true });
+  });
+  it("fact sheet states the suggested price and the dead stock names", () => {
+    const sheet = factSheet(facts);
+    expect(sheet).toMatch(/Suggested price: \$\d/);
+    expect(sheet).toContain("Desk lamp");
+  });
+  it("handles missing overhead and no sales", () => {
+    expect(factSheet(buildFacts(shop.products, null, NOW))).toContain("overhead is missing");
+    expect(factSheet(buildFacts([p({})], oh, NOW))).toContain("No sales yet");
+  });
+  it("prompt forbids invention", () => {
+    expect(onDevicePrompt(facts).toLowerCase()).toContain("never invent");
   });
 });

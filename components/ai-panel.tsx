@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Sparkles } from "lucide-react";
-import { explainShort, type AiResult } from "@/lib/ai";
+import { explainShort, warmUpOnDevice, type AiResult } from "@/lib/ai";
 import { buildFacts, type ShortAnswers } from "@/lib/grounding";
 import type { Overhead, Product } from "@/lib/types";
 
@@ -18,6 +18,17 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
 
   // Numbers changed: an old explanation would describe a shop that no longer exists.
   useEffect(() => setState({ s: "idle" }), [key]);
+
+  // First touch anywhere starts loading the on-device model, so the button click is faster.
+  useEffect(() => {
+    const go = () => warmUpOnDevice();
+    window.addEventListener("pointerdown", go, { once: true });
+    window.addEventListener("keydown", go, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", go);
+      window.removeEventListener("keydown", go);
+    };
+  }, []);
 
   async function run() {
     setState({ s: "loading" });

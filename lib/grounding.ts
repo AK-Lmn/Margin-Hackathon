@@ -1,7 +1,7 @@
 import { computeAnswer, marginPct } from "./margin";
 import { deadStockValue, pickPriceMove } from "./moves";
 import type { Overhead, Product } from "./types";
-import { daysSince } from "./format";
+import { daysSince, money } from "./format";
 
 /** Every number the model may use. All computed locally from the seller's own data. */
 export type Facts = {
@@ -83,18 +83,47 @@ Rules:
 - If a value is null, say it is missing and ask the seller to add it.
 - Currency is dollars. Be direct and specific. No greetings, no filler.`;
 
+/**
+ * Three plain lines of facts, small enough for a tiny on-device model to answer quickly.
+ * Plain English instead of JSON so the model has no field names to echo back.
+ */
+export function factSheet(f: Facts): string {
+  const profit =
+    f.revenue === 0
+      ? "No sales yet this month."
+      : f.beforeOverhead
+        ? `Profit before overhead (overhead is missing): ${money(f.trueProfit)}.`
+        : `Profit this month after ${money(f.overhead ?? 0)} overhead: ${money(f.trueProfit)}.${
+            f.breakEvenUnits === null ? "" : ` Break-even is ${f.breakEvenUnits} units a month.`
+          }`;
+
+  const m = f.priceMove;
+  const price = !m
+    ? "Prices already cover costs and overhead."
+    : m.kind === "missing-cost"
+      ? `The cost of ${m.name} is missing, so there is no price advice yet.`
+      : `${m.name} sells for ${money(m.currentPrice, { forceCents: true })} and costs ${money(m.cost, { forceCents: true })}${
+          m.belowCost ? ", so every sale loses money" : ""
+        }. Suggested price: ${money(m.suggested, { forceCents: true })}.`;
+
+  const dead =
+    f.deadStock.length === 0
+      ? "Nothing is dead. Everything sold in the last 30 days."
+      : `Not sold in 30 days: ${f.deadStock.map((d) => d.name).join(", ")}.${
+          f.deadStockValueAtCost > 0 ? ` ${money(f.deadStockValueAtCost)} of stock at cost sits on the shelf.` : ""
+        }`;
+
+  return `1. ${profit}\n2. ${price}\n3. ${dead}`;
+}
+
 export function onDevicePrompt(facts: Facts): string {
-  return `${RULES}
+  return `You explain a small shop's numbers to its owner in plain words.
 
-FACTS:
-${JSON.stringify(facts)}
+${factSheet(facts)}
 
-Write three answers, each one sentence of at most 25 words:
-- "profit": is the shop making money? Say true profit, and "before overhead" if beforeOverhead is true.
-- "price": what to charge. Use priceMove. If belowCost, say they are losing money on it.
-- "dead": what is not selling. Name the products in deadStock; if empty, say nothing is dead.
-
-Reply with only JSON: {"profit": "...", "price": "...", "dead": "..."}`;
+Rewrite those three points as exactly 3 lines, in the same order, friendly and direct, at most 25 words each.
+Copy every number exactly as written. Add no other numbers. Never invent a cost, price or sale.
+If something is missing, say it is missing. No labels, no bullets, no JSON.`;
 }
 
 export function cloudPrompt(facts: Facts): string {
@@ -130,6 +159,19 @@ function parseJson(text: string): unknown {
 }
 
 export function parseShortAnswers(text: string): ShortAnswers | null {
+  // Preferred: three plain lines. Strip any "1." / "-" the model adds anyway.
+  const raw = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const strip = (l: string) => l.replace(/^(?:\d+[.)]|[-*•])\s*/, "").trim();
+  if (!text.includes("{") && !text.includes("```")) {
+    // Models sometimes add a greeting. If the points are numbered, trust the numbered lines.
+    const numbered = raw.filter((l) => /^\d+[.)]\s/.test(l));
+    const picked = numbered.length === 3 ? numbered : raw;
+    if (picked.length === 3) {
+      const [profit, price, dead] = picked.map(strip);
+      return { profit, price, dead };
+    }
+  }
+  // Tolerate JSON in case a model answers that way.
   const j = parseJson(text) as Record<string, unknown> | null;
   if (!j || typeof j !== "object") return null;
   const { profit, price, dead } = j;

@@ -38,6 +38,23 @@ function checkShort(a: ShortAnswers | null, facts: Facts): ShortAnswers {
   return a;
 }
 
+let warmed = false;
+
+/**
+ * Loads the on-device model ahead of time so the first answer doesn't pay for it.
+ * Call from a user gesture (Chrome requires one). Safe to call repeatedly; failures are silent
+ * because the real call falls back to cloud anyway.
+ */
+export function warmUpOnDevice(): void {
+  if (warmed) return;
+  warmed = true;
+  onDeviceModel()
+    .initializeDeviceModel()
+    .catch(() => {
+      warmed = false;
+    });
+}
+
 /**
  * Three short answers. Tries on-device first (private, works offline), then cloud.
  * Must be called from a click: Chrome needs user activation to start the on-device model.
