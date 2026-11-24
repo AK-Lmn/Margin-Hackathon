@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>Margin logo</title><g transform="translate(-15.36 -15.36) scale(1.12)">
+  
+  <path fill="#111827" fill-rule="evenodd" d="
+    M 32 42
+    L 74 42
+    L 128 135.5
+    L 182 42
+    L 224 42
+    L 224 146
+    L 186 146
+    L 186 88.9
+    L 138 172
+    L 118 172
+    L 70 88.9
+    L 70 146
+    L 32 146
+    Z
+    M 32 166
+    L 70 166
+    L 70 214
+    L 32 214
+    Z
+    M 186 166
+    L 224 166
+    L 224 214
+    L 186 214
+    Z
+  "/>
+</g></svg>

@@ -1,0 +1,43 @@
+{
+  "brand": "Margin",
+  "tagline": "Know your real profit",
+  "brief": "Small-shop profit reality tool that shows true profit after product costs and monthly overhead, break-even unit count, repricing, and dead stock — calculated offline on-device with Chrome Gemini Nano.",
+  "adjectives": [
+    "grounded",
+    "clear",
+    "trustworthy",
+    "sharp",
+    "calm"
+  ],
+  "criteria": "Distinct from blue fintech clichés, instantly readable as M at 16px, works in one colour.",
+  "industry": "payments-fintech",
+  "nav": [
+    "Sample shop",
+    "How it works",
+    "GitHub"
+  ],
+  "brand_color": "#111827",
+  "greyscale": false,
+  "designer": "AKL Studio",
+  "round": 2,
+  "concepts": [
+    {
+      "name": "Break-Even M",
+      "symbol": "margin-symbol.svg",
+      "lockup": "margin-horizontal.svg",
+      "symbol_on_tile": "exports/margin-symbol-app-icon.svg",
+      "tile_color": "#111827",
+      "idea": "Geometric M split by a horizontal break-even datum cut (overhead below, net margin crown above).",
+      "rationale": [
+        "Reads unmistakably as M down to 16px favicon",
+        "Encodes the break-even chart directly without stock-arrow clichés",
+        "Works identically in one-colour forest green, black, or reversed emerald"
+      ]
+    }
+  ],
+  "recommendation": "Break-Even M in Ink Black (#111827) with pure white (#ffffff) reversed on #111827.",
+  "next_steps": [
+    "Copy exports/web-icons/* into Margin-Hackathon/public/ or app/ to activate the favicon and PWA icon set",
+    "Use margin-horizontal.svg in README.md and app header"
+  ]
+}

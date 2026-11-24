@@ -1,8 +1,23 @@
-# Margin
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./brand/kit/exports/margin-symbol-white.svg">
+    <img src="./brand/kit/exports/margin-symbol-black.svg" alt="Margin" width="64" height="64">
+  </picture>
+  <h1>Margin</h1>
+  <p><strong>Know your real profit — calculated offline on your device.</strong></p>
+  <p>
+    <a href="https://margin-hackathon.vercel.app">Live App</a> ·
+    <a href="#what-it-answers">What it answers</a> ·
+    <a href="#how-firebase-ai-logic-is-used">Firebase AI Logic</a> ·
+    <a href="#run-it">Run locally</a>
+  </p>
+</div>
 
-Margin is a web app for small sellers who have no accounting system. You enter your products, what they cost and your monthly overhead (rent, bills, supplies, staff pay). It shows your true profit, one price worth changing, and the stock that hasn't sold in 30 days.
+---
 
-It was built for the #BuildHybridAI 2026 hackathon on Devpost. A live copy runs at https://margin-hackathon.vercel.app.
+Margin is a web app for small sellers who have no accounting system. You enter your products, what they cost, and your monthly overhead (rent, bills, supplies, staff pay). It shows your true profit, one price worth changing, and the stock that hasn't sold in 30 days.
+
+Built for the **#BuildHybridAI 2026** hackathon on Devpost. Live at [margin-hackathon.vercel.app](https://margin-hackathon.vercel.app).
 
 ## What it answers
 
@@ -16,7 +31,7 @@ A break-even line shows how many units you need to sell this month to cover over
 
 Margin computes every number itself with plain, tested functions. The AI only explains those numbers in plain words, so it never does the math.
 
-- **Two model instances.** `ONLY_ON_DEVICE` runs Chrome's built-in model. `ONLY_IN_CLOUD` runs `gemini-3.5-flash-lite` through Firebase AI Logic. The app tries on-device first because it is private and works offline.
+- **Two model instances.** `ONLY_ON_DEVICE` runs Chrome's built-in Gemini Nano model. `ONLY_IN_CLOUD` runs Google Gemini through Firebase AI Logic. The app tries on-device first because it is private and works offline.
 - **Cloud is opt-in.** If on-device AI isn't available, or takes more than 30 seconds, Margin asks before sending your product names, costs and prices to the cloud model. The choice is remembered in your browser.
 - **The source label is real.** The badge next to each answer reads the SDK's `inferenceSource` and shows how long the call took.
 - **Answers are checked before you see them.** Each of the three answers may only use numbers from its own line of the fact sheet it was given. A number from another line, a made-up number, or a spelled-out number such as "twelve" makes Margin discard the answer and show an error with a retry.

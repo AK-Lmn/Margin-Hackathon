@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Margin</title>
+  <path fill="#000000" fill-rule="evenodd" d="
+    M 38 62 A 24 24 0 0 1 62 38 L 196 38 A 16 16 0 0 1 210 62 L 54 152 A 10 10 0 0 1 38 143 Z
+    M 46 184 L 202 94 A 10 10 0 0 1 218 103 L 218 194 A 24 24 0 0 1 194 218 L 62 218 A 24 24 0 0 1 38 194 L 38 193 A 12 12 0 0 1 46 184 Z
+  "/>
+</svg>

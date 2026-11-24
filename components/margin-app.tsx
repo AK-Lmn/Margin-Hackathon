@@ -159,7 +159,12 @@ export function MarginApp() {
   return (
     <div className="mx-auto w-full max-w-[72rem] px-4 pb-24 sm:px-6 lg:px-10">
       <header className="flex min-h-16 items-center justify-between border-b border-line">
-        <span className="text-lg font-semibold tracking-tight">Margin</span>
+        <span className="inline-flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <svg className="h-5 w-5 text-ink" viewBox="0 0 256 256" aria-hidden="true">
+            <path fill="currentColor" fillRule="evenodd" d="M28 38L74 38L128 131.5L182 38L228 38L228 140L186 140L186 88.9L138 172L118 172L70 88.9L70 140L28 140ZM28 166L70 166L70 218L28 218ZM186 166L228 166L228 218L186 218Z" />
+          </svg>
+          Margin
+        </span>
         {ready && products.length > 0 && (
           <button onClick={startOver} className="press min-h-11 rounded-full px-3 text-sm font-medium text-muted hover:text-ink">
             Start over
