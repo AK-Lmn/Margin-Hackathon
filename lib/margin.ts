@@ -39,6 +39,9 @@ export function breakEvenUnits(products: Product[], o: Overhead | null): number 
   return Math.ceil(total / avg);
 }
 
+/** Below this many units sold, overhead per unit is too noisy to price from (3 sales would put a whole month's rent on each). */
+export const MIN_SALES_FOR_OVERHEAD_SHARE = 10;
+
 /** Price that covers cost + per-unit overhead share at the target margin. */
 export function priceSuggestion(
   p: Product,
@@ -48,7 +51,7 @@ export function priceSuggestion(
 ): number | null {
   if (p.cost === null) return null;
   const total = overheadTotal(o);
-  const share = total !== null && totalUnitsSold > 0 ? total / totalUnitsSold : 0;
+  const share = total !== null && totalUnitsSold >= MIN_SALES_FOR_OVERHEAD_SHARE ? total / totalUnitsSold : 0;
   return Math.ceil(((p.cost + share) / (1 - targetMargin)) * 100 - 1e-9) / 100;
 }
 
@@ -73,7 +76,6 @@ export function computeAnswer(
     losingMoney: trueProfit < 0,
     missingCost: products.filter((p) => p.cost === null).map((p) => p.id),
     belowCost: costed.filter((p) => p.price < (p.cost as number)).map((p) => p.id),
-    source: "LOCAL_MATH",
   };
 }
 

@@ -117,3 +117,11 @@ describe("avgUnitMargin", () => {
     expect(avgUnitMargin([p({ cost: null })])).toBeNull();
   });
 });
+
+describe("priceSuggestion with few sales", () => {
+  it("ignores overhead share below the minimum number of sales", async () => {
+    const { priceSuggestion: ps, MIN_SALES_FOR_OVERHEAD_SHARE } = await import("./margin");
+    expect(ps(p({ cost: 5 }), oh, MIN_SALES_FOR_OVERHEAD_SHARE - 1, 0.3)).toBe(7.15);
+    expect(ps(p({ cost: 5 }), oh, MIN_SALES_FOR_OVERHEAD_SHARE, 0.3)).toBeGreaterThan(7.15);
+  });
+});

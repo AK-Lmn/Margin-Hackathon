@@ -100,7 +100,11 @@ export function Answers({ products, overhead, answer, flash, onEditOverhead, onS
       title: move.belowCost
         ? `You're losing money on ${p.name}. Charge ${money(move.suggested, { forceCents: true })}`
         : `Charge ${money(move.suggested, { forceCents: true })} for ${p.name}`,
-      detail: `Now ${money(p.price, { forceCents: true })}, cost ${money(p.cost as number, { forceCents: true })}. Covers cost, overhead share and a 30% margin.`,
+      detail: `Now ${money(p.price, { forceCents: true })}, cost ${money(p.cost as number, { forceCents: true })}. ${
+        move.withOverhead
+          ? "Covers cost, overhead share and a 30% margin."
+          : "Covers cost and a 30% margin. Too few sales to count overhead in the price yet."
+      }`,
       action: { label: "Change price", onClick: () => onSetPrice(p.id, move.suggested), primary: true },
     };
   })();

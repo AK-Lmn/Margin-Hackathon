@@ -11,17 +11,17 @@ import { money } from "@/lib/format";
 import { computeAnswer } from "@/lib/margin";
 import { discountedPrice } from "@/lib/moves";
 import { sampleShop } from "@/lib/sample-shop";
+import {
+  clearOp, deleteOp, discountOp, overheadOp, parseStore, setPriceOp,
+  type Op, type Store,
+} from "@/lib/store";
 import type { Overhead, Product } from "@/lib/types";
 
-type Store = { products: Product[]; overhead: Overhead | null };
 const KEY = "margin:v1";
 
 function load(): Store | null {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as Store;
-    return Array.isArray(s.products) ? s : null;
+    return parseStore(localStorage.getItem(KEY));
   } catch {
     return null;
   }
@@ -59,6 +59,13 @@ export function MarginApp() {
     setReady(true);
   }, []);
 
+  // A tab left open overnight would keep counting "30 days" from yesterday's clock.
+  useEffect(() => {
+    const refresh = () => document.visibilityState === "visible" && setNow(new Date());
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
+  }, []);
+
   useEffect(() => {
     if (!ready) return;
     try {
@@ -80,31 +87,22 @@ export function MarginApp() {
     setTimeout(() => setFlash(null), 750);
   };
 
-  const commit = (next: Store, message: string, flashKey: string) => {
-    const prev = store;
-    setStore(next);
-    pulse(flashKey);
-    say(message, () => setStore(prev));
+  /** Applies a change. Undo reverses only that change, so edits made in the meantime stay. */
+  const commit = (op: Op, message: string, flashKey?: string) => {
+    setStore(op.next);
+    if (flashKey) pulse(flashKey);
+    say(message, () => setStore(op.undo));
   };
 
   const onSetPrice = (id: string, price: number) => {
     const p = products.find((x) => x.id === id);
     if (!p) return;
-    commit(
-      { ...store, products: products.map((x) => (x.id === id ? { ...x, price, discountedFrom: undefined } : x)) },
-      `${p.name} is now ${money(price, { forceCents: true })}`,
-      "price",
-    );
+    commit(setPriceOp(store, id, price), `${p.name} is now ${money(price, { forceCents: true })}`, "price");
   };
 
   const onDiscount = (ids: string[]) => {
     commit(
-      {
-        ...store,
-        products: products.map((x) =>
-          ids.includes(x.id) ? { ...x, discountedFrom: x.price, price: discountedPrice(x) } : x,
-        ),
-      },
+      discountOp(store, ids, discountedPrice),
       `Discounted ${ids.length} ${ids.length === 1 ? "product" : "products"} by 20%, never below cost`,
       "dead",
     );
@@ -122,16 +120,14 @@ export function MarginApp() {
   };
 
   const onDelete = (id: string) => {
-    const prev = store;
     const p = products.find((x) => x.id === id);
-    setStore({ ...store, products: products.filter((x) => x.id !== id) });
     setOpenId(null);
-    say(`Deleted ${p?.name ?? "product"}`, () => setStore(prev));
+    commit(deleteOp(store, id), `Deleted ${p?.name ?? "product"}`);
   };
 
   const onSaveOverhead = (o: Overhead) => {
     setOhOpen(false);
-    commit({ ...store, overhead: o }, "Monthly costs saved", "overhead");
+    commit(overheadOp(store, o), "Monthly costs saved", "overhead");
   };
 
   const openOverhead = () => {
@@ -150,11 +146,9 @@ export function MarginApp() {
   };
 
   const startOver = () => {
-    const prev = store;
-    setStore({ products: [], overhead: null });
     setOpenId(null);
     setOhOpen(false);
-    say("Cleared your shop", () => setStore(prev));
+    commit(clearOp(store), "Cleared your shop");
   };
 
   const empty = products.length === 0 && openId !== "new";

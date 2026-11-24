@@ -34,5 +34,4 @@ export type Answer = {
   missingCost: string[];
   /** Products priced below cost. */
   belowCost: string[];
-  source: "ON_DEVICE" | "IN_CLOUD" | "LOCAL_MATH";
 };

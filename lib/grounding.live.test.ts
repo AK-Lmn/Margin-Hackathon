@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { initializeApp } from "firebase/app";
 import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
-import { buildFacts, onDevicePrompt, parseShortAnswers, validateGrounded } from "./grounding";
+import { buildFacts, onDevicePrompt, parseShortAnswers, validateShort } from "./grounding";
 import { sampleShop } from "./sample-shop";
 import type { Product } from "./types";
 
@@ -51,7 +51,7 @@ describe.skipIf(!process.env.LIVE || !env.NEXT_PUBLIC_FIREBASE_API_KEY)("live gr
       const text = r.response.text();
       const a = parseShortAnswers(text);
       expect(a, `unparseable: ${text}`).not.toBeNull();
-      const v = validateGrounded(`${a!.profit} ${a!.price} ${a!.dead}`, facts);
+      const v = validateShort(a!, facts);
       expect(v, `ungrounded: ${text}`).toEqual({ ok: true });
     });
   }

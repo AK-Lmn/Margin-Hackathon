@@ -34,3 +34,25 @@ describe("discounts", () => {
     expect(deadStockValue([p({ id: "a", stock: 4 }), p({ id: "b", cost: null })], ["a", "b"])).toBe(20);
   });
 });
+
+describe("price advice stays sane", () => {
+  const oh = { rent: 250, bills: 60, supplies: 45, salaries: 0 };
+  it("early in the month (few sales) it does not spread overhead over a handful of units", () => {
+    const m = pickPriceMove([p({ cost: 5, price: 10, sold: 3 })], oh);
+    // cost 5 at a 30% margin is 7.15, below the current 10, so no change is suggested
+    expect(m).toBeNull();
+  });
+  it("a below-cost product early in the month gets a cost-based price, not a huge one", () => {
+    const m = pickPriceMove([p({ cost: 9, price: 5, sold: 3 })], oh);
+    expect(m && m.kind === "raise" && m.suggested).toBeLessThan(20);
+    expect(m && m.kind === "raise" && m.withOverhead).toBe(false);
+  });
+  it("counts overhead once there are enough sales", () => {
+    const m = pickPriceMove([p({ cost: 5, price: 6, sold: 40 })], oh);
+    expect(m && m.kind === "raise" && m.withOverhead).toBe(true);
+  });
+  it("does not tell the seller to undo a discount they just made", () => {
+    const thin = p({ id: "lamp", name: "Lamp", cost: 9, price: 9, sold: 40, discountedFrom: 10 });
+    expect(pickPriceMove([thin], { rent: 100, bills: 0, supplies: 0, salaries: 0 })).toBeNull();
+  });
+});

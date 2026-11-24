@@ -10,7 +10,7 @@ import {
   type GenerativeModel,
 } from "firebase/ai";
 
-export const CLOUD_MODEL = "gemini-3.5-flash-lite";
+const CLOUD_MODEL = "gemini-3.5-flash-lite";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -35,6 +35,8 @@ function app(): FirebaseApp {
     }
     initializeAppCheck(a, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
     appCheckOn = true;
+  } else if (process.env.NODE_ENV === "production") {
+    console.warn("Margin: App Check is off (no NEXT_PUBLIC_RECAPTCHA_SITE_KEY). Anyone can call the AI with this key.");
   }
   return a;
 }

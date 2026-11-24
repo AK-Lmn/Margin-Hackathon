@@ -24,7 +24,15 @@ export type Facts = {
   deadStock: { name: string; stock: number; daysSinceSale: number | null }[];
   deadStockValueAtCost: number;
   priceMove:
-    | { kind: "raise"; name: string; currentPrice: number; cost: number; suggested: number; belowCost: boolean }
+    | {
+        kind: "raise";
+        name: string;
+        currentPrice: number;
+        cost: number;
+        suggested: number;
+        belowCost: boolean;
+        withOverhead: boolean;
+      }
     | { kind: "missing-cost"; name: string }
     | null;
 };
@@ -69,25 +77,23 @@ export function buildFacts(products: Product[], o: Overhead | null, now: Date): 
             cost: move.product.cost as number,
             suggested: move.suggested,
             belowCost: move.belowCost,
+            withOverhead: move.withOverhead,
           },
   };
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-/* ---------- Prompts ---------- */
+/* ---------- The three answers ---------- */
 
-const RULES = `You explain a small shop's numbers in plain words.
-Rules:
-- Only use numbers from FACTS. Copy them exactly. Never calculate new numbers, never estimate, never invent a cost, price, sale or competitor.
-- If a value is null, say it is missing and ask the seller to add it.
-- Currency is dollars. Write like a calm bookkeeper: start with the fact. No greetings, praise, cheering or exclamation marks.`;
+export type ShortAnswers = { profit: string; price: string; dead: string };
+const KEYS = ["profit", "price", "dead"] as const;
 
 /**
- * Three plain lines of facts, small enough for a tiny on-device model to answer quickly.
- * Plain English instead of JSON so the model has no field names to echo back.
+ * One plain sentence of facts per answer. These feed the prompt, and each one is also the only
+ * source of numbers its answer may use.
  */
-export function factSheet(f: Facts): string {
+export function factLines(f: Facts): ShortAnswers {
   const profit =
     f.revenue === 0
       ? "No sales yet this month."
@@ -104,7 +110,9 @@ export function factSheet(f: Facts): string {
       ? `The cost of ${m.name} is missing, so there is no price advice yet.`
       : `${m.name} sells for ${money(m.currentPrice, { forceCents: true })} and costs ${money(m.cost, { forceCents: true })}${
           m.belowCost ? ", so every sale loses money" : ""
-        }. Suggested price: ${money(m.suggested, { forceCents: true })}.`;
+        }. Suggested price: ${money(m.suggested, { forceCents: true })}.${
+          m.withOverhead ? "" : " There are too few sales to count overhead in the price yet."
+        }`;
 
   const dead =
     f.deadStock.length === 0
@@ -113,7 +121,16 @@ export function factSheet(f: Facts): string {
           f.deadStockValueAtCost > 0 ? ` ${money(f.deadStockValueAtCost)} of stock at cost sits on the shelf.` : ""
         }`;
 
-  return `1. ${profit}\n2. ${price}\n3. ${dead}`;
+  return { profit, price, dead };
+}
+
+/**
+ * Three plain lines of facts, small enough for a tiny on-device model to answer quickly.
+ * Plain English instead of JSON so the model has no field names to echo back.
+ */
+export function factSheet(f: Facts): string {
+  const l = factLines(f);
+  return `1. ${l.profit}\n2. ${l.price}\n3. ${l.dead}`;
 }
 
 export function onDevicePrompt(facts: Facts): string {
@@ -123,26 +140,11 @@ ${factSheet(facts)}
 
 Rewrite those three points as exactly 3 lines, in the same order, in plain words, at most 25 words each.
 Start each line with the fact. Write like a calm bookkeeper: no greetings, no praise, no exclamation marks.
-Copy every number exactly as written. Add no other numbers. Never invent a cost, price or sale.
+Copy every number exactly as written. Add no other numbers. Write numbers as digits. Never invent a cost, price or sale.
 If something is missing, say it is missing. No labels, no bullets, no JSON.`;
 }
 
-export function cloudPrompt(facts: Facts): string {
-  return `${RULES}
-
-FACTS:
-${JSON.stringify(facts)}
-
-Write a short shop plan. Reply with only JSON:
-{"summary": "two sentences on where the shop stands",
- "steps": ["up to 4 concrete next actions, each one sentence, most important first"],
- "discountOrder": ["names from deadStock, best to discount first"]}
-Only use product names that appear in FACTS.`;
-}
-
 /* ---------- Parsing ---------- */
-
-export type ShortAnswers = { profit: string; price: string; dead: string };
 
 function parseJson(text: string): unknown {
   const t = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
@@ -180,45 +182,39 @@ export function parseShortAnswers(text: string): ShortAnswers | null {
   return { profit, price, dead };
 }
 
-export type Strategy = { summary: string; steps: string[]; discountOrder: string[] };
-
-export function parseStrategy(text: string): Strategy | null {
-  const j = parseJson(text) as Record<string, unknown> | null;
-  if (!j || typeof j.summary !== "string" || !Array.isArray(j.steps)) return null;
-  const strs = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
-  return { summary: j.summary, steps: strs(j.steps).slice(0, 4), discountOrder: strs(j.discountOrder) };
-}
-
 /* ---------- Grounding check ---------- */
 
-/** Fixed rules of the app, allowed in any answer. */
-const CONSTANTS = [30, 20];
+/** Fixed rules of the app (30 days, 20% off, 30% margin) and zero, allowed in any answer. */
+const CONSTANTS = [0, 30, 20];
 
-function collectNumbers(v: unknown, out: Set<number>): void {
-  if (typeof v === "number" && Number.isFinite(v)) {
-    out.add(v);
-    out.add(Math.abs(v));
-    out.add(Math.round(v));
-    out.add(round2(v));
-  } else if (Array.isArray(v)) v.forEach((x) => collectNumbers(x, out));
-  else if (v && typeof v === "object") Object.values(v).forEach((x) => collectNumbers(x, out));
-}
+/** Spelled-out numbers dodge a digit check, so they are refused. "one" is left alone: it is also a pronoun. */
+const NUMBER_WORDS =
+  /\b(eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|dozen)\b/i;
 
 export function extractNumbers(text: string): number[] {
   return (text.match(/\d[\d,]*(?:\.\d+)?/g) ?? []).map((s) => Number(s.replace(/,/g, "")));
 }
 
-export type Grounded = { ok: true } | { ok: false; invented: number[] };
+export type Grounded = { ok: true } | { ok: false; invented: (number | string)[] };
 
-/** Every number in the model's text must appear in the facts (or be a fixed app rule, or part of a product name). */
-export function validateGrounded(text: string, facts: Facts): Grounded {
-  const allowed = new Set<number>(CONSTANTS);
-  collectNumbers(facts, allowed);
-  for (const p of facts.products) extractNumbers(p.name).forEach((n) => allowed.add(n));
+/**
+ * Each answer may only use the numbers from its own fact line (plus fixed app rules, digits inside
+ * product names, and the count of dead products for the "not selling" answer). A number that exists
+ * elsewhere in the shop, such as another product's price, is refused here.
+ */
+export function validateShort(a: ShortAnswers, f: Facts): Grounded {
+  const source = factLines(f);
+  const nameNumbers = f.products.flatMap((p) => extractNumbers(p.name));
+  const invented: (number | string)[] = [];
 
-  const invented = extractNumbers(text).filter((n) => {
-    for (const a of allowed) if (Math.abs(a - n) < 0.005) return false;
-    return true;
-  });
+  for (const k of KEYS) {
+    const allowed = [...extractNumbers(source[k]), ...CONSTANTS, ...nameNumbers];
+    if (k === "dead") allowed.push(f.deadStock.length);
+    for (const n of extractNumbers(a[k])) {
+      if (!allowed.some((x) => Math.abs(x - n) < 0.005)) invented.push(n);
+    }
+    const word = a[k].match(NUMBER_WORDS);
+    if (word) invented.push(word[0].toLowerCase());
+  }
   return invented.length === 0 ? { ok: true } : { ok: false, invented };
 }

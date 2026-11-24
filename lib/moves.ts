@@ -1,8 +1,8 @@
-import { priceSuggestion } from "./margin";
+import { MIN_SALES_FOR_OVERHEAD_SHARE, overheadTotal, priceSuggestion } from "./margin";
 import type { Overhead, Product } from "./types";
 
 export type PriceMove =
-  | { kind: "raise"; product: Product; suggested: number; belowCost: boolean }
+  | { kind: "raise"; product: Product; suggested: number; belowCost: boolean; withOverhead: boolean }
   | { kind: "missing-cost"; product: Product }
   | null;
 
@@ -12,21 +12,23 @@ const totalSold = (ps: Product[]) =>
 /** The one price change worth making now. Never guesses a missing cost. */
 export function pickPriceMove(products: Product[], o: Overhead | null, target = 0.3): PriceMove {
   const units = totalSold(products);
-  const costed = products.filter((p) => p.cost !== null);
+  const withOverhead = overheadTotal(o) !== null && units >= MIN_SALES_FOR_OVERHEAD_SHARE;
+  // A product the seller just discounted is a decision, not a pricing mistake to correct.
+  const costed = products.filter((p) => p.cost !== null && p.discountedFrom === undefined);
 
   const below = costed
     .filter((p) => p.price < (p.cost as number))
     .sort((a, b) => (b.cost as number) - b.price - ((a.cost as number) - a.price));
   if (below[0]) {
     const s = priceSuggestion(below[0], o, units, target) as number;
-    return { kind: "raise", product: below[0], suggested: s, belowCost: true };
+    return { kind: "raise", product: below[0], suggested: s, belowCost: true, withOverhead };
   }
 
   const gaps = costed
     .map((p) => ({ p, s: priceSuggestion(p, o, units, target) as number }))
     .filter(({ p, s }) => s > p.price + 0.005)
     .sort((a, b) => (b.s - b.p.price) * (b.p.sold || 1) - (a.s - a.p.price) * (a.p.sold || 1));
-  if (gaps[0]) return { kind: "raise", product: gaps[0].p, suggested: gaps[0].s, belowCost: false };
+  if (gaps[0]) return { kind: "raise", product: gaps[0].p, suggested: gaps[0].s, belowCost: false, withOverhead };
 
   const missing = products.find((p) => p.cost === null);
   return missing ? { kind: "missing-cost", product: missing } : null;
