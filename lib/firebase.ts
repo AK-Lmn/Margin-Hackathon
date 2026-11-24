@@ -1,6 +1,6 @@
 "use client";
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import {
   getAI,
   getGenerativeModel,
@@ -33,7 +33,7 @@ function app(): FirebaseApp {
       (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string | boolean }).FIREBASE_APPCHECK_DEBUG_TOKEN =
         process.env.NEXT_PUBLIC_APP_CHECK_DEBUG_TOKEN || true;
     }
-    initializeAppCheck(a, { provider: new ReCaptchaV3Provider(siteKey), isTokenAutoRefreshEnabled: true });
+    initializeAppCheck(a, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
     appCheckOn = true;
   } else if (process.env.NODE_ENV === "production") {
     console.warn("Margin: App Check is off (no NEXT_PUBLIC_RECAPTCHA_SITE_KEY). Anyone can call the AI with this key.");
