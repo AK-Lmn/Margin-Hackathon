@@ -8,9 +8,23 @@ import type { Overhead, Product } from "@/lib/types";
 
 type State =
   | { s: "idle" }
-  | { s: "loading" }
+  | { s: "loading"; t0: number }
   | { s: "done"; r: AiResult<ShortAnswers>; ms: number }
   | { s: "error"; message: string };
+
+/** Live stopwatch. Hidden from screen readers so it doesn't announce every tick. */
+function Elapsed({ since }: { since: number }) {
+  const [ms, setMs] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setMs(performance.now() - since), 100);
+    return () => clearInterval(id);
+  }, [since]);
+  return (
+    <span aria-hidden className="tabular-nums">
+      {duration(ms)}
+    </span>
+  );
+}
 
 export function AiPanel({ products, overhead, now }: { products: Product[]; overhead: Overhead | null; now: Date }) {
   const facts = useMemo(() => buildFacts(products, overhead, now), [products, overhead, now]);
@@ -32,8 +46,8 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
   }, []);
 
   async function run() {
-    setState({ s: "loading" });
     const t0 = performance.now();
+    setState({ s: "loading", t0 });
     try {
       const r = await explainShort(facts);
       setState({ s: "done", r, ms: performance.now() - t0 });
@@ -60,7 +74,10 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
 
       {state.s === "loading" && (
         <div aria-busy="true" aria-live="polite">
-          <p className="text-sm text-muted">Crunching your numbers&hellip;</p>
+          <p className="flex items-baseline justify-between gap-3 text-sm text-muted">
+            <span>Crunching your numbers&hellip;</span>
+            <Elapsed since={state.t0} />
+          </p>
           <div className="mt-3 space-y-2">
             <div className="skeleton h-4 w-11/12" />
             <div className="skeleton h-4 w-9/12" />
