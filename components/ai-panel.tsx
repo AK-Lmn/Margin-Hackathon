@@ -2,13 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { explainShort, warmUpOnDevice, type AiResult } from "@/lib/ai";
+import { duration } from "@/lib/format";
 import { buildFacts, type ShortAnswers } from "@/lib/grounding";
 import type { Overhead, Product } from "@/lib/types";
 
 type State =
   | { s: "idle" }
   | { s: "loading" }
-  | { s: "done"; r: AiResult<ShortAnswers> }
+  | { s: "done"; r: AiResult<ShortAnswers>; ms: number }
   | { s: "error"; message: string };
 
 export function AiPanel({ products, overhead, now }: { products: Product[]; overhead: Overhead | null; now: Date }) {
@@ -32,15 +33,19 @@ export function AiPanel({ products, overhead, now }: { products: Product[]; over
 
   async function run() {
     setState({ s: "loading" });
+    const t0 = performance.now();
     try {
-      setState({ s: "done", r: await explainShort(facts) });
+      const r = await explainShort(facts);
+      setState({ s: "done", r, ms: performance.now() - t0 });
     } catch (e) {
       setState({ s: "error", message: e instanceof Error ? e.message : "Something went wrong." });
     }
   }
 
   const badge =
-    state.s === "done" ? (state.r.source === "ON_DEVICE" ? "On-device · offline" : "Cloud") : null;
+    state.s === "done"
+      ? `${state.r.source === "ON_DEVICE" ? "On-device · offline" : "Cloud"} · ${duration(state.ms)}`
+      : null;
 
   return (
     <section aria-label="Plain-words explanation" className="mt-6">
