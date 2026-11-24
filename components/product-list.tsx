@@ -93,7 +93,8 @@ export function ProductList({ products, deadIds, now, openId, setOpenId, onSave,
         <h2 id="prod-h" className="text-lg font-semibold">Products</h2>
         <button
           onClick={() => setOpenId(openId === "new" ? null : "new")}
-          className="press flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-sm font-semibold hover:bg-wash"
+          aria-expanded={openId === "new"}
+          className="press flex min-h-11 items-center gap-1.5 rounded-full border border-line px-4 text-sm font-semibold hover:bg-wash aria-expanded:border-ink aria-expanded:bg-wash"
         >
           <Plus size={16} strokeWidth={2} aria-hidden /> Add
         </button>
@@ -128,7 +129,7 @@ export function ProductList({ products, deadIds, now, openId, setOpenId, onSave,
                   <button
                     onClick={() => setOpenId(open ? null : p.id)}
                     aria-expanded={open}
-                    className="rise press grid min-h-14 w-full grid-cols-[1fr_auto_auto] items-center gap-x-4 py-2.5 text-left hover:bg-wash/60"
+                    className="rise press grid min-h-14 w-full grid-cols-[1fr_auto_auto] items-center gap-x-4 py-2.5 text-left hover:bg-wash/60 aria-expanded:bg-wash"
                     style={{ "--i": Math.min(i, 12) } as React.CSSProperties}
                   >
                     <span className="min-w-0">

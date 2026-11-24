@@ -168,13 +168,13 @@ export function MarginApp() {
         <Skeleton />
       ) : empty ? (
         <section className="rise mx-auto max-w-xl pt-16 text-center sm:pt-28">
-          <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          <h1 className="text-balance text-[2.5rem] font-semibold leading-tight tracking-tight sm:text-5xl">
             See what your shop earns after rent and bills
           </h1>
           <p className="mx-auto mt-4 max-w-md text-pretty text-base leading-relaxed text-muted sm:text-lg">
             Enter your products, their costs and your monthly overhead. Margin shows your true profit, a price to charge, and the stock that isn&apos;t selling.
           </p>
-          <div className="mt-8 flex flex-col items-stretch gap-3 min-[420px]:flex-row min-[420px]:justify-center">
+          <div className="mt-8 flex flex-col items-stretch gap-3 xs:flex-row xs:justify-center">
             <button onClick={loadSample} className="press min-h-12 rounded-full bg-ink px-7 text-base font-semibold text-bg hover:bg-ink/85">
               Try the sample shop
             </button>

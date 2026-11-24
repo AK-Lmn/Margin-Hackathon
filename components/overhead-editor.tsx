@@ -44,11 +44,11 @@ function Form({ overhead, onSave, onCancel }: { overhead: Overhead | null; onSav
   };
 
   return (
-    <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-3 pt-3 min-[420px]:grid-cols-2">
+    <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-3 pt-3 xs:grid-cols-2">
       {KEYS.map(({ k, label }) => (
         <Field key={k} label={label} prefix="$" value={f[k]} onChange={(v) => setF((s) => ({ ...s, [k]: v }))} error={err[k]} placeholder="0" />
       ))}
-      <div className="flex gap-2 min-[420px]:col-span-2">
+      <div className="flex gap-2 xs:col-span-2">
         <button type="submit" className="press min-h-11 rounded-full bg-ink px-5 text-sm font-semibold text-bg hover:bg-ink/85">
           Save monthly costs
         </button>
@@ -72,7 +72,7 @@ export function OverheadEditor({ overhead, open, setOpen, onSave }: Props) {
         <button
           onClick={() => setOpen(!open)}
           aria-expanded={open}
-          className="press min-h-11 rounded-full border border-line px-4 text-sm font-semibold hover:bg-wash"
+          className="press min-h-11 rounded-full border border-line px-4 text-sm font-semibold hover:bg-wash aria-expanded:border-ink aria-expanded:bg-wash"
         >
           {open ? "Close" : total === null ? "Add" : "Edit"}
         </button>

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#ffffff",
+  themeColor: "#ffffff", // ds-allow-hardcode: browser chrome colour lives outside CSS, so it cannot read var(--bg). Keep in sync with --bg.
 };
 
 export default function RootLayout({

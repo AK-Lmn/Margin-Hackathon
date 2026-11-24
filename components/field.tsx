@@ -21,8 +21,8 @@ export function Field({ label, value, onChange, error, hint, inputMode = "decima
         {label}
       </label>
       <div
-        className={`flex min-h-11 items-center rounded-lg border bg-bg px-3 transition-colors focus-within:border-ink ${
-          error ? "border-loss" : "border-line"
+        className={`flex min-h-11 items-center rounded-lg border bg-bg px-3 transition-colors focus-within:border-ink focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ink ${
+          error ? "border-loss" : "border-field"
         }`}
       >
         {prefix && <span className="mr-1 text-muted">{prefix}</span>}
@@ -35,7 +35,7 @@ export function Field({ label, value, onChange, error, hint, inputMode = "decima
           placeholder={placeholder}
           aria-invalid={!!error}
           aria-describedby={error || hint ? `${id}-d` : undefined}
-          className="w-full min-w-0 bg-transparent py-2 text-base outline-none placeholder:text-muted/70"
+          className="min-h-11 w-full min-w-0 bg-transparent py-2 text-base outline-none placeholder:text-muted"
         />
       </div>
       {(error || hint) && (

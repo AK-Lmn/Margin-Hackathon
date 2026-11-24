@@ -1,22 +1,41 @@
 @import "tailwindcss";
 
-/* Daylight palette: the seller is outdoors at a stall. Colour means status only. */
+/* Daylight palette: the seller is outdoors at a stall. Colour means status only.
+   Every text colour is at least 7:1 on white and on its own wash (WCAG AAA). */
 :root {
   --bg: #ffffff;
-  --ink: #0d1210;
-  --muted: #566059; /* 6.4:1 on white */
-  --line: #e4e7e3;
+  --ink: #0d1210; /* 18:1 on white */
+  --muted: #4a534d; /* 8.0:1 on white, 7.3:1 on wash */
+  --line: #e4e7e3; /* decorative dividers only */
+  --field: #7d8780; /* 3.7:1 on white: boundary of text inputs */
   --wash: #f4f6f3;
-  --gain: #00794a; /* 5.4:1 on white */
+  --gain: #005c37; /* 8.1:1 on white, 7.2:1 on gain-wash */
   --gain-wash: #e4f5ec;
-  --loss: #c4281f; /* 5.7:1 on white */
+  --loss: #9c1d17; /* 8.1:1 on white, 7.0:1 on loss-wash */
   --loss-wash: #fdebe9;
 
+  --shadow-toast: 0 8px 24px -6px rgb(13 18 16 / 0.35);
+
+  /* Motion */
   --motion-fast: 150ms;
   --motion-normal: 200ms;
   --motion-exit: 160ms; /* ~20% shorter than the entrance */
+  --motion-settle: 260ms;
+  --motion-settle-delay: 180ms;
+  --motion-slow: 700ms;
+  --motion-instant: 0.01ms; /* reduced motion: state still changes, movement does not */
+  --stagger: 30ms;
+  --shimmer: 1.2s;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Shape and distance */
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --shift-small: 4px; /* chart reveal bleed, dropdown travel */
+  --shift: 6px; /* entrance travel */
+  --shift-toast: 8px;
+  --radius-skeleton: 8px;
 }
 
 @theme inline {
@@ -24,12 +43,17 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-field: var(--field);
   --color-wash: var(--wash);
   --color-gain: var(--gain);
   --color-gain-wash: var(--gain-wash);
   --color-loss: var(--loss);
   --color-loss-wash: var(--loss-wash);
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+@theme {
+  --breakpoint-xs: 26.25rem;
 }
 
 html {
@@ -55,28 +79,37 @@ input {
   caret-color: var(--ink);
 }
 
+/* The outline follows each element's own corners, so pills stay pills when focused. */
 :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: var(--focus-width) solid var(--ink);
+  outline-offset: var(--focus-offset);
 }
 
-/* ---------- Press + hover feedback ---------- */
+/* ---------- Buttons: hover, press, disabled, loading ---------- */
 .press {
   transition:
     transform var(--motion-fast) var(--ease-out),
     background-color var(--motion-fast) var(--ease-out),
-    color var(--motion-fast) var(--ease-out);
+    color var(--motion-fast) var(--ease-out),
+    opacity var(--motion-fast) var(--ease-out);
 }
-.press:active:not(:disabled) {
+.press:active:not(:disabled):not([aria-busy="true"]) {
   transform: scale(0.97);
+}
+.press:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.press[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.7;
 }
 
 /* ---------- Entrances ---------- */
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(var(--shift));
   }
   to {
     opacity: 1;
@@ -85,26 +118,26 @@ input {
 }
 .rise {
   animation: rise var(--motion-normal) var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * 30ms);
+  animation-delay: calc(var(--i, 0) * var(--stagger));
 }
 
 /* Secondary details settle after the main element */
 .settle {
-  animation: rise 260ms var(--ease-out) both;
-  animation-delay: 180ms;
+  animation: rise var(--motion-settle) var(--ease-out) both;
+  animation-delay: var(--motion-settle-delay);
 }
 
 /* Chart line draws once */
 @keyframes reveal {
   from {
-    clip-path: inset(-4px 100% -4px 0);
+    clip-path: inset(calc(var(--shift-small) * -1) 100% calc(var(--shift-small) * -1) 0);
   }
   to {
-    clip-path: inset(-4px -4px -4px 0);
+    clip-path: inset(calc(var(--shift-small) * -1) calc(var(--shift-small) * -1) calc(var(--shift-small) * -1) 0);
   }
 }
 .draw {
-  animation: reveal 700ms var(--ease-in-out) both;
+  animation: reveal var(--motion-slow) var(--ease-in-out) both;
 }
 
 /* One pulse to confirm a successful action */
@@ -117,7 +150,7 @@ input {
   }
 }
 .confirm {
-  animation: confirm 700ms var(--ease-out);
+  animation: confirm var(--motion-slow) var(--ease-out);
 }
 
 /* ---------- Collapsible (grid rows trick: no layout thrash on content) ---------- */
@@ -143,7 +176,7 @@ input {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.95);
+    transform: translateY(var(--shift-toast)) scale(0.95);
   }
   to {
     opacity: 1;
@@ -153,11 +186,12 @@ input {
 @keyframes toast-out {
   to {
     opacity: 0;
-    transform: translateY(6px) scale(0.97);
+    transform: translateY(var(--shift)) scale(0.97);
   }
 }
 .toast {
   transform-origin: bottom center;
+  box-shadow: var(--shadow-toast);
   animation: toast-in var(--motion-normal) var(--ease-out) both;
 }
 .toast[data-state="closing"] {
@@ -172,8 +206,8 @@ input {
 }
 .skeleton {
   background: var(--wash);
-  border-radius: 8px;
-  animation: shimmer 1.2s var(--ease-in-out) infinite;
+  border-radius: var(--radius-skeleton);
+  animation: shimmer var(--shimmer) var(--ease-in-out) infinite;
 }
 
 /* ---------- Reduced motion: drop movement, keep state changes ---------- */
@@ -183,12 +217,12 @@ input {
   .draw,
   .confirm,
   .toast {
-    animation-duration: 0.01ms !important;
-    animation-delay: 0ms !important;
+    animation-duration: var(--motion-instant) !important;
+    animation-delay: var(--motion-instant) !important;
   }
   .expander,
   .press {
-    transition-duration: 0.01ms !important;
+    transition-duration: var(--motion-instant) !important;
   }
   .skeleton {
     animation: none;
