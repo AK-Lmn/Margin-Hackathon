@@ -116,4 +116,9 @@ describe("prompts", () => {
   it("prompt forbids invention", () => {
     expect(onDevicePrompt(facts).toLowerCase()).toContain("never invent");
   });
+  it("prompt asks for a flat tone with no greetings or cheering", () => {
+    const t = onDevicePrompt(facts).toLowerCase();
+    expect(t).toContain("no greetings");
+    expect(t).toContain("exclamation");
+  });
 });

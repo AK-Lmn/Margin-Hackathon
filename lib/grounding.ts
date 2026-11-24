@@ -81,7 +81,7 @@ const RULES = `You explain a small shop's numbers in plain words.
 Rules:
 - Only use numbers from FACTS. Copy them exactly. Never calculate new numbers, never estimate, never invent a cost, price, sale or competitor.
 - If a value is null, say it is missing and ask the seller to add it.
-- Currency is dollars. Be direct and specific. No greetings, no filler.`;
+- Currency is dollars. Write like a calm bookkeeper: start with the fact. No greetings, praise, cheering or exclamation marks.`;
 
 /**
  * Three plain lines of facts, small enough for a tiny on-device model to answer quickly.
@@ -121,7 +121,8 @@ export function onDevicePrompt(facts: Facts): string {
 
 ${factSheet(facts)}
 
-Rewrite those three points as exactly 3 lines, in the same order, friendly and direct, at most 25 words each.
+Rewrite those three points as exactly 3 lines, in the same order, in plain words, at most 25 words each.
+Start each line with the fact. Write like a calm bookkeeper: no greetings, no praise, no exclamation marks.
 Copy every number exactly as written. Add no other numbers. Never invent a cost, price or sale.
 If something is missing, say it is missing. No labels, no bullets, no JSON.`;
 }

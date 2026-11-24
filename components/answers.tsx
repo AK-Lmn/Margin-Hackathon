@@ -88,12 +88,12 @@ export function Answers({ products, overhead, answer, flash, onEditOverhead, onS
   // 2: what to charge?
   const priceRow = (() => {
     if (!move)
-      return { title: "Your prices cover costs and overhead", detail: "Nothing to change right now." };
+      return { title: "Your prices cover costs and overhead", detail: "No price needs changing right now." };
     const p = move.product;
     if (move.kind === "missing-cost")
       return {
         title: `Add the cost of ${p.name} to see its price`,
-        detail: "Margin never guesses a cost.",
+        detail: "Without it, Margin can't tell whether you make money on it.",
         action: { label: "Add cost", onClick: () => onEditProduct(p.id), primary: true },
       };
     return {
@@ -107,7 +107,7 @@ export function Answers({ products, overhead, answer, flash, onEditOverhead, onS
 
   // 3: what's not selling?
   const deadRow = (() => {
-    if (dead.length === 0) return { title: "Nothing dead. Everything sold in the last 30 days", detail: undefined };
+    if (dead.length === 0) return { title: "Everything sold in the last 30 days", detail: undefined };
     const names = dead
       .map((id) => products.find((p) => p.id === id)?.name)
       .filter(Boolean)
