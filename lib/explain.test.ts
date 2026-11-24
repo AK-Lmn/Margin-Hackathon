@@ -67,3 +67,31 @@ describe("explainWith: on-device first, cloud only with consent", () => {
     ).rejects.toBeInstanceOf(UngroundedError);
   });
 });
+
+describe("guardDevice: the on-device path must never reach the cloud", () => {
+  it("does not call the model at all when the browser has no on-device API", async () => {
+    const { guardDevice } = await import("./explain");
+    let called = false;
+    const run: Runner = async () => ((called = true), { text: good, source: "IN_CLOUD" });
+    await expect(guardDevice(run, () => false)("x")).rejects.toThrow(/not available/);
+    expect(called).toBe(false);
+  });
+  it("refuses an answer that the SDK says came from the cloud", async () => {
+    const { guardDevice } = await import("./explain");
+    await expect(guardDevice(ok(good, "IN_CLOUD"), () => true)("x")).rejects.toThrow(/cloud/i);
+  });
+  it("passes a genuine on-device answer through", async () => {
+    const { guardDevice } = await import("./explain");
+    await expect((await guardDevice(ok(good, "ON_DEVICE"), () => true)("x")).source).toBe("ON_DEVICE");
+  });
+  it("without the on-device API, the app asks for consent instead of calling the cloud", async () => {
+    const { guardDevice } = await import("./explain");
+    let cloudCalled = false;
+    const cloud: Runner = async () => ((cloudCalled = true), { text: good, source: "IN_CLOUD" });
+    const sdkLeak = ok(good, "IN_CLOUD"); // what the SDK does with no adapter: answers from the cloud
+    await expect(
+      explainWith(facts, deps({ device: guardDevice(sdkLeak, () => false), cloud, allowCloud: false })),
+    ).rejects.toBeInstanceOf(CloudConsentError);
+    expect(cloudCalled).toBe(false);
+  });
+});

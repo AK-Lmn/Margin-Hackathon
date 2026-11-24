@@ -16,6 +16,21 @@ export class CloudConsentError extends Error {
   }
 }
 
+/**
+ * Wraps the on-device runner so it can never reach the cloud.
+ * The Firebase SDK quietly answers from the cloud when a browser has no Prompt API, even for a model
+ * created as on-device only. So check support first (the call is never made), and refuse any answer
+ * that the SDK reports as cloud-sourced.
+ */
+export function guardDevice(run: Runner, supported: () => boolean): Runner {
+  return async (prompt) => {
+    if (!supported()) throw new Error("On-device AI is not available in this browser.");
+    const r = await run(prompt);
+    if (r.source !== "ON_DEVICE") throw new Error("The on-device model answered from the cloud, so Margin refused it.");
+    return r;
+  };
+}
+
 export type Deps = {
   device: Runner;
   cloud: Runner;

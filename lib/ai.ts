@@ -1,6 +1,6 @@
 "use client";
 import { InferenceSource } from "firebase/ai";
-import { explainWith, type Runner, type Source } from "./explain";
+import { explainWith, guardDevice, type Runner, type Source } from "./explain";
 import { cloudModel, onDeviceModel } from "./firebase";
 import type { Facts } from "./grounding";
 
@@ -10,12 +10,15 @@ const DEVICE_TIMEOUT_MS = 30_000;
 
 const toSource = (s: unknown): Source => (s === InferenceSource.ON_DEVICE ? "ON_DEVICE" : "IN_CLOUD");
 
-const deviceRunner: Runner = async (prompt) => {
+/** Chrome's Prompt API. Without it the SDK would answer "on-device" requests from the cloud. */
+const hasPromptApi = () => typeof self !== "undefined" && "LanguageModel" in self && !!(self as { LanguageModel?: unknown }).LanguageModel;
+
+const deviceRunner: Runner = guardDevice(async (prompt) => {
   const m = onDeviceModel();
   await m.initializeDeviceModel();
   const r = await m.generateContent(prompt);
   return { text: r.response.text(), source: toSource(r.response.inferenceSource) };
-};
+}, hasPromptApi);
 
 const cloudRunner: Runner = async (prompt) => {
   const r = await cloudModel().generateContent(prompt);
@@ -30,7 +33,7 @@ let warmed = false;
  * because the real call handles them.
  */
 export function warmUpOnDevice(): void {
-  if (warmed) return;
+  if (warmed || !hasPromptApi()) return;
   warmed = true;
   onDeviceModel()
     .initializeDeviceModel()
