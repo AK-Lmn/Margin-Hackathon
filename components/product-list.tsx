@@ -132,8 +132,8 @@ export function ProductList({ products, deadIds, now, openId, setOpenId, onSave,
                     style={{ "--i": Math.min(i, 12) } as React.CSSProperties}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-base font-medium">{p.name}</span>
-                      <span className="block truncate text-xs text-muted">
+                      <span className="block text-base font-medium [overflow-wrap:anywhere]">{p.name}</span>
+                      <span className="block text-pretty text-xs leading-relaxed text-muted">
                         {p.cost === null ? "cost unknown" : `cost ${money(p.cost, { forceCents: true })}`} · {p.stock} in stock · {p.sold} sold
                         {dead.has(p.id) && ` · ${idle === null ? "never sold" : `no sale in ${idle} days`}`}
                       </span>
