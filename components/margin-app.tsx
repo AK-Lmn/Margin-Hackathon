@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AiPanel } from "./ai-panel";
 import { Answers } from "./answers";
 import { Hero } from "./hero";
 import { OverheadEditor } from "./overhead-editor";
@@ -205,6 +206,7 @@ export function MarginApp() {
                   onEditProduct={editProduct}
                   onDiscount={onDiscount}
                 />
+                <AiPanel products={products} overhead={overhead} now={now} />
               </>
             )}
           </main>
